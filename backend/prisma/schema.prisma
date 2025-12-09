@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum ReservationSource {
+  WEB
+  IN_HOUSE
+  PHONE
+}
+
+enum WaitlistStatus {
+  WAITING
+  PROMOTED
+  EXPIRED
+}
+
+model Reservation {
+  id              String            @id @default(cuid())
+  guestName       String
+  email           String
+  phone           String
+  date            DateTime          @db.Date
+  time            String            // HH:mm format
+  partySize       Int
+  status          ReservationStatus @default(PENDING)
+  source          ReservationSource @default(WEB)
+  notes           String?
+  cancelToken     String            @unique @default(cuid())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([date, time])
+  @@index([cancelToken])
+  @@index([status])
+}
+
+model WaitlistEntry {
+  id                   String         @id @default(cuid())
+  guestName            String
+  email                String?
+  phone                String?
+  date                 DateTime       @db.Date
+  time                 String         // HH:mm format
+  partySize            Int
+  status               WaitlistStatus @default(WAITING)
+  linkedReservationId  String?
+  createdAt            DateTime       @default(now())
+  promotedAt           DateTime?
+
+  @@index([date, time])
+  @@index([status])
+}
+
+model Table {
+  id          String  @id @default(cuid())
+  name        String
+  capacityMin Int
+  capacityMax Int
+  isActive    Boolean @default(true)
+
+  @@index([isActive])
+}

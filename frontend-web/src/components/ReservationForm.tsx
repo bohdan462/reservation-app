@@ -1,0 +1,389 @@
+import { useState, FormEvent, ChangeEvent } from 'react';
+import { createReservation, CreateReservationResponse } from '../api/reservations';
+
+interface FormData {
+  guestName: string;
+  email: string;
+  phone: string;
+  date: string;
+  time: string;
+  partySize: string;
+  notes: string;
+}
+
+interface FormErrors {
+  guestName?: string;
+  email?: string;
+  phone?: string;
+  date?: string;
+  time?: string;
+  partySize?: string;
+}
+
+export default function ReservationForm() {
+  const [formData, setFormData] = useState<FormData>({
+    guestName: '',
+    email: '',
+    phone: '',
+    date: '',
+    time: '',
+    partySize: '2',
+    notes: '',
+  });
+
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [result, setResult] = useState<CreateReservationResponse | null>(null);
+  const [submitError, setSubmitError] = useState<string>('');
+
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error for this field
+    if (errors[name as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.guestName.trim()) {
+      newErrors.guestName = 'Name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email address';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    }
+
+    if (!formData.date) {
+      newErrors.date = 'Date is required';
+    } else {
+      const selectedDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        newErrors.date = 'Date cannot be in the past';
+      }
+    }
+
+    if (!formData.time) {
+      newErrors.time = 'Time is required';
+    }
+
+    const partySize = parseInt(formData.partySize);
+    if (isNaN(partySize) || partySize < 1 || partySize > 20) {
+      newErrors.partySize = 'Party size must be between 1 and 20';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitError('');
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await createReservation({
+        guestName: formData.guestName,
+        email: formData.email,
+        phone: formData.phone,
+        date: formData.date,
+        time: formData.time,
+        partySize: parseInt(formData.partySize),
+        notes: formData.notes || undefined,
+        source: 'WEB',
+      });
+
+      setResult(response);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'An error occurred');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReset = () => {
+    setFormData({
+      guestName: '',
+      email: '',
+      phone: '',
+      date: '',
+      time: '',
+      partySize: '2',
+      notes: '',
+    });
+    setErrors({});
+    setResult(null);
+    setSubmitError('');
+  };
+
+  // Get minimum date (today)
+  const minDate = new Date().toISOString().split('T')[0];
+
+  // If we have a result, show the status view
+  if (result) {
+    return (
+      <div className="status-view">
+        {result.status === 'confirmed' && (
+          <>
+            <div className="status-icon success">✓</div>
+            <h2 className="status-title">Reservation Confirmed!</h2>
+            <p className="status-message">{result.message}</p>
+            {result.reservation && (
+              <div className="reservation-details">
+                <div className="detail-row">
+                  <span className="detail-label">Name</span>
+                  <span className="detail-value">{result.reservation.guestName}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Date</span>
+                  <span className="detail-value">
+                    {new Date(result.reservation.date).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Time</span>
+                  <span className="detail-value">{result.reservation.time}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Party Size</span>
+                  <span className="detail-value">{result.reservation.partySize} people</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Email</span>
+                  <span className="detail-value">{result.reservation.email}</span>
+                </div>
+              </div>
+            )}
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>
+              A confirmation email has been sent to {formData.email}
+            </p>
+            <button onClick={handleReset} className="back-button">
+              Make Another Reservation
+            </button>
+          </>
+        )}
+
+        {result.status === 'pending' && (
+          <>
+            <div className="status-icon pending">⏱</div>
+            <h2 className="status-title">Request Received</h2>
+            <p className="status-message">{result.message}</p>
+            {result.reservation && (
+              <div className="reservation-details">
+                <div className="detail-row">
+                  <span className="detail-label">Name</span>
+                  <span className="detail-value">{result.reservation.guestName}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Date</span>
+                  <span className="detail-value">
+                    {new Date(result.reservation.date).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Time</span>
+                  <span className="detail-value">{result.reservation.time}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Party Size</span>
+                  <span className="detail-value">{result.reservation.partySize} people</span>
+                </div>
+              </div>
+            )}
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>
+              We'll contact you at {formData.email} to confirm your reservation.
+            </p>
+            <button onClick={handleReset} className="back-button">
+              Back to Home
+            </button>
+          </>
+        )}
+
+        {result.status === 'waitlisted' && (
+          <>
+            <div className="status-icon waitlisted">📋</div>
+            <h2 className="status-title">Added to Waitlist</h2>
+            <p className="status-message">{result.message}</p>
+            {result.waitlistEntry && (
+              <div className="reservation-details">
+                <div className="detail-row">
+                  <span className="detail-label">Name</span>
+                  <span className="detail-value">{result.waitlistEntry.guestName}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Date</span>
+                  <span className="detail-value">
+                    {new Date(result.waitlistEntry.date).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Time</span>
+                  <span className="detail-value">{result.waitlistEntry.time}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Party Size</span>
+                  <span className="detail-value">{result.waitlistEntry.partySize} people</span>
+                </div>
+              </div>
+            )}
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>
+              We'll notify you at {formData.email} if a spot becomes available.
+            </p>
+            <button onClick={handleReset} className="back-button">
+              Back to Home
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="reservation-form">
+      {submitError && <div className="error-message">{submitError}</div>}
+
+      <div className="form-group">
+        <label htmlFor="guestName" className="form-label">
+          Your Name *
+        </label>
+        <input
+          type="text"
+          id="guestName"
+          name="guestName"
+          value={formData.guestName}
+          onChange={handleChange}
+          className="form-input"
+          placeholder="John Doe"
+        />
+        {errors.guestName && <span className="form-error">{errors.guestName}</span>}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="email" className="form-label">
+          Email *
+        </label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          className="form-input"
+          placeholder="john@example.com"
+        />
+        {errors.email && <span className="form-error">{errors.email}</span>}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="phone" className="form-label">
+          Phone Number *
+        </label>
+        <input
+          type="tel"
+          id="phone"
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          className="form-input"
+          placeholder="+1 (555) 123-4567"
+        />
+        {errors.phone && <span className="form-error">{errors.phone}</span>}
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="date" className="form-label">
+            Date *
+          </label>
+          <input
+            type="date"
+            id="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            min={minDate}
+            className="form-input"
+          />
+          {errors.date && <span className="form-error">{errors.date}</span>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="time" className="form-label">
+            Time *
+          </label>
+          <input
+            type="time"
+            id="time"
+            name="time"
+            value={formData.time}
+            onChange={handleChange}
+            className="form-input"
+          />
+          {errors.time && <span className="form-error">{errors.time}</span>}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="partySize" className="form-label">
+          Party Size *
+        </label>
+        <select
+          id="partySize"
+          name="partySize"
+          value={formData.partySize}
+          onChange={handleChange}
+          className="form-select"
+        >
+          {Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
+            <option key={num} value={num}>
+              {num} {num === 1 ? 'person' : 'people'}
+            </option>
+          ))}
+        </select>
+        {errors.partySize && <span className="form-error">{errors.partySize}</span>}
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="notes" className="form-label">
+          Special Requests (Optional)
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          value={formData.notes}
+          onChange={handleChange}
+          className="form-textarea"
+          placeholder="Any special requests or dietary requirements?"
+        />
+      </div>
+
+      <button type="submit" disabled={isSubmitting} className="submit-button">
+        {isSubmitting ? (
+          <>
+            <div className="spinner" style={{ display: 'inline-block', width: 20, height: 20, marginRight: 8, verticalAlign: 'middle' }} />
+            Processing...
+          </>
+        ) : (
+          'Make Reservation'
+        )}
+      </button>
+    </form>
+  );
+}
