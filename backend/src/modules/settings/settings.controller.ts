@@ -2,9 +2,32 @@ import { Request, Response } from 'express';
 import { SettingsService } from './settings.service';
 import { z } from 'zod';
 
+// Helper to convert day name to number
+const dayNameToNumber = (day: string): number => {
+  const days: { [key: string]: number } = {
+    'Sunday': 0,
+    'Monday': 1,
+    'Tuesday': 2,
+    'Wednesday': 3,
+    'Thursday': 4,
+    'Friday': 5,
+    'Saturday': 6,
+  };
+  return days[day] ?? 0;
+};
+
+// Helper to convert day number to name
+const dayNumberToName = (num: number): string => {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return days[num] ?? 'Sunday';
+};
+
 const operatingHoursSchema = z.object({
   id: z.string().optional(),
-  dayOfWeek: z.number().min(0).max(6),
+  dayOfWeek: z.union([
+    z.number().min(0).max(6),
+    z.enum(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])
+  ]).transform((val) => typeof val === 'string' ? dayNameToNumber(val) : val),
   isClosed: z.boolean(),
   openTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
   closeTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
@@ -92,19 +115,19 @@ export class SettingsController {
             allowSameDayBooking: settings.allowSameDayBooking,
             sameDayCutoffHour: settings.sameDayCutoffHour,
           },
-          operatingHours: settings.operatingHours.map((oh) => ({
+          operatingHours: settings.operatingHours.map((oh: any) => ({
             id: oh.id,
-            dayOfWeek: oh.dayOfWeek,
+            dayOfWeek: dayNumberToName(oh.dayOfWeek),
             isClosed: oh.isClosed,
             openTime: oh.openTime,
             closeTime: oh.closeTime,
-            servicePeriods: oh.servicePeriods.map((sp) => ({
+            servicePeriods: oh.servicePeriods.map((sp: any) => ({
               name: sp.name,
               startTime: sp.startTime,
               endTime: sp.endTime,
             })),
           })),
-          specialDates: settings.specialDates.map((sd) => ({
+          specialDates: settings.specialDates.map((sd: any) => ({
             id: sd.id,
             date: sd.date,
             name: sd.name,
@@ -159,19 +182,19 @@ export class SettingsController {
             allowSameDayBooking: updatedSettings.allowSameDayBooking,
             sameDayCutoffHour: updatedSettings.sameDayCutoffHour,
           },
-          operatingHours: updatedSettings.operatingHours.map((oh) => ({
+          operatingHours: updatedSettings.operatingHours.map((oh: any) => ({
             id: oh.id,
-            dayOfWeek: oh.dayOfWeek,
+            dayOfWeek: dayNumberToName(oh.dayOfWeek),
             isClosed: oh.isClosed,
             openTime: oh.openTime,
             closeTime: oh.closeTime,
-            servicePeriods: oh.servicePeriods.map((sp) => ({
+            servicePeriods: oh.servicePeriods.map((sp: any) => ({
               name: sp.name,
               startTime: sp.startTime,
               endTime: sp.endTime,
             })),
           })),
-          specialDates: updatedSettings.specialDates.map((sd) => ({
+          specialDates: updatedSettings.specialDates.map((sd: any) => ({
             id: sd.id,
             date: sd.date,
             name: sd.name,
