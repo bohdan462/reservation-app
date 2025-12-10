@@ -29,7 +29,7 @@ function getTransporter() {
 /**
  * Send email using nodemailer with timeout
  * Falls back to console logging if SMTP is not configured
- * Non-blocking - runs in background to avoid delaying API response
+ * Runs with timeout to avoid blocking API response too long
  */
 export async function sendEmail(options: EmailOptions): Promise<void> {
   console.log('[EMAIL] Sending email:', {
@@ -41,26 +41,26 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
   const smtp = getTransporter();
   
   if (smtp) {
-    // Send email in background with timeout - don't block the response
-    Promise.race([
-      smtp.sendMail({
-        from: config.email.fromEmail,
-        to: options.to,
-        subject: options.subject,
-        text: options.text,
-        html: options.html,
-      }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Email timeout after 5s')), 5000)
-      )
-    ])
-    .then(() => {
+    try {
+      // Send with 10 second timeout
+      await Promise.race([
+        smtp.sendMail({
+          from: config.email.fromEmail,
+          to: options.to,
+          subject: options.subject,
+          text: options.text,
+          html: options.html,
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Email timeout after 10s')), 10000)
+        )
+      ]);
       console.log('[EMAIL] ✅ Email sent successfully to:', options.to);
-    })
-    .catch((error) => {
+    } catch (error: any) {
       console.error('[EMAIL] ❌ Failed to send email:', error.message);
       console.log('[EMAIL] Body (for debugging):', options.text);
-    });
+      // Don't throw - just log the error so API continues
+    }
   } else {
     // Fallback: just log it (for development without SMTP configured)
     console.log('[EMAIL] ⚠️  SMTP not configured, logging email body:');
