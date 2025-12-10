@@ -8,6 +8,7 @@ router.post('/', controller.createReservation);
 router.get('/', controller.getReservations);
 router.get('/:id', controller.getReservationById);
 router.patch('/:id', controller.updateReservation);
+router.delete('/:id', controller.deleteReservation);
 router.post('/:id/cancel', controller.cancelReservation);
 
 // Guest-facing cancellation route (no /api prefix)

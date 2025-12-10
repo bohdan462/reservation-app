@@ -130,6 +130,26 @@ export class ReservationController {
   };
 
   /**
+   * Delete Reservation - DELETE /api/reservations/:id
+   * Permanently delete a reservation
+   */
+  deleteReservation = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      await this.reservationService.deleteReservation(id);
+
+      res.json({ message: 'Reservation deleted successfully' });
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        res.status(404).json({ error: 'Reservation not found' });
+        return;
+      }
+      console.error('Error deleting reservation:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  /**
    * Cancel Reservation (Guest Token) - GET /reservations/cancel/:cancelToken
    * Cancel a reservation via token (guest-facing)
    */

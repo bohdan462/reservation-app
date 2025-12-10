@@ -237,15 +237,46 @@ export class ReservationService {
   }
 
   /**
-   * Update reservation status and notes
+   * Update reservation with any allowed fields
    */
   async updateReservation(
     id: string,
-    updates: { status?: ReservationStatus; notes?: string }
+    updates: {
+      guestName?: string;
+      email?: string;
+      phone?: string;
+      date?: string;
+      time?: string;
+      partySize?: number;
+      status?: ReservationStatus;
+      notes?: string;
+    }
   ): Promise<Reservation> {
+    // Format phone if provided
+    const data: any = { ...updates };
+    if (updates.phone) {
+      const digits = updates.phone.replace(/\D/g, '');
+      data.phone = digits.length === 11
+        ? `+${digits[0]} (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7,11)}`
+        : updates.phone;
+    }
+    // Convert date string to Date object if provided
+    if (updates.date) {
+      data.date = new Date(updates.date);
+    }
+
     return prisma.reservation.update({
       where: { id },
-      data: updates,
+      data,
+    });
+  }
+
+  /**
+   * Delete a reservation permanently
+   */
+  async deleteReservation(id: string): Promise<void> {
+    await prisma.reservation.delete({
+      where: { id },
     });
   }
 
