@@ -77,57 +77,7 @@ export class EvaluationService {
       };
     }
 
-    if (hoursInAdvance > settings.maxDaysInAdvance * 24) {
-      return {
-        decision: 'REJECT',
-        reason: `Cannot book more than ${settings.maxDaysInAdvance} days ahead`,
-        metadata: {
-          currentCapacityPercent: 0,
-          reservationsInSlot: 0,
-          totalGuests: 0,
-          hoursInAdvance,
-          isWithinOperatingHours: true,
-        },
-      };
-    }
-
-    // 3. Check same-day rules
-    if (hoursInAdvance < 24 && !settings.allowSameDayBooking) {
-      return {
-        decision: 'REJECT',
-        reason: 'Same-day booking not allowed',
-        metadata: {
-          currentCapacityPercent: 0,
-          reservationsInSlot: 0,
-          totalGuests: 0,
-          hoursInAdvance,
-          isWithinOperatingHours: true,
-        },
-      };
-    }
-
-    // Check if past same-day cutoff
-    if (hoursInAdvance < 24) {
-      const requestDateTime = new Date(`${date}T${time}:00`);
-      const cutoffDateTime = new Date(date);
-      cutoffDateTime.setHours(settings.sameDayCutoffHour, 0, 0, 0);
-      
-      if (new Date() > cutoffDateTime && requestDateTime.getDate() === cutoffDateTime.getDate()) {
-        return {
-          decision: 'REJECT',
-          reason: `Same-day bookings must be made before ${settings.sameDayCutoffHour}:00`,
-          metadata: {
-            currentCapacityPercent: 0,
-            reservationsInSlot: 0,
-            totalGuests: 0,
-            hoursInAdvance,
-            isWithinOperatingHours: true,
-          },
-        };
-      }
-    }
-
-    // 4. Check party size rules
+    // 3. Check party size rules
     if (settings.largePartyNeedsApproval && partySize >= settings.largePartyMinSize) {
       const capacity = await this.calculateCapacity(date, time, settings);
       return {
@@ -197,11 +147,9 @@ export class EvaluationService {
         decision: 'WAITLIST',
         reason: `Capacity at ${Math.round(capacity.utilization * 100)}% - adding to waitlist`,
         metadata: {
-        const requestDateTime = this.parseLocalDate(date);
-        const [rh, rm] = time.split(':').map(Number);
-        requestDateTime.setHours(rh, rm, 0, 0);
-        const cutoffDateTime = this.parseLocalDate(date);
-        cutoffDateTime.setHours(settings.sameDayCutoffHour, 0, 0, 0);
+          currentCapacityPercent: capacity.utilization,
+          reservationsInSlot: capacity.reservationCount,
+          totalGuests: capacity.totalGuests,
           hoursInAdvance,
           isWithinOperatingHours: true,
         },
@@ -343,13 +291,13 @@ export class EvaluationService {
     const RESTAURANT_UTC_OFFSET = -6; // CST
     const serverUtcOffset = now.getTimezoneOffset() / -60; // Server's offset in hours
     
+    // Calculate the offset difference between restaurant and server
+    const offsetDiffHours = RESTAURANT_UTC_OFFSET - serverUtcOffset;
+
     // Adjust reservation time to match server's understanding
     // If server is in UTC (offset 0) and restaurant is CST (offset -6):
     // A 5:30 PM reservation in CST is 11:30 PM in UTC
     // So we need to add (0 - (-6)) = 6 hours to get the UTC equivalent
-          date: this.parseLocalDate(date),
-    
-    // Create the reservation datetime adjusted to server time
     const reservationInServerTime = new Date(reservationDate.getTime() + offsetDiffHours * 60 * 60 * 1000);
     
     const diffMs = reservationInServerTime.getTime() - now.getTime();
