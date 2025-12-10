@@ -95,10 +95,9 @@ export default function ReservationForm() {
     if (!formData.date) {
       newErrors.date = 'Date is required';
     } else {
-      const selectedDate = new Date(formData.date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (selectedDate < today) {
+      // Compare dates as strings to avoid timezone issues
+      const today = new Date().toISOString().split('T')[0];
+      if (formData.date < today) {
         newErrors.date = 'Date cannot be in the past';
       }
     }
