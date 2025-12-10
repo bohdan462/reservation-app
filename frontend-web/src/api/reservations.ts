@@ -64,6 +64,14 @@ export async function createReservation(
 
   if (!response.ok) {
     const error = await response.json();
+    console.error('API Error:', error);
+    
+    // Handle validation errors with details
+    if (error.details && Array.isArray(error.details)) {
+      const messages = error.details.map((d: any) => d.message || d.path?.join('.') || '').join(', ');
+      throw new Error(messages || error.error || 'Validation failed');
+    }
+    
     throw new Error(error.error || 'Failed to create reservation');
   }
 

@@ -104,7 +104,7 @@ export default function ReservationForm() {
         ? formData.time.split(':').slice(0, 2).join(':')
         : formData.time;
 
-      const response = await createReservation({
+      const requestData = {
         guestName: formData.guestName,
         email: formData.email,
         phone: formData.phone,
@@ -112,12 +112,21 @@ export default function ReservationForm() {
         time: normalizedTime,
         partySize: parseInt(formData.partySize),
         notes: formData.notes || undefined,
-        source: 'WEB',
-      });
+        source: 'WEB' as const,
+      };
+
+      console.log('Sending reservation request:', requestData);
+
+      const response = await createReservation(requestData);
 
       setResult(response);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'An error occurred');
+      console.error('Reservation error:', error);
+      if (error instanceof Error) {
+        setSubmitError(error.message);
+      } else {
+        setSubmitError('An error occurred while creating your reservation');
+      }
     } finally {
       setIsSubmitting(false);
     }
