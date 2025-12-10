@@ -73,7 +73,7 @@ const generateDateOptions = () => {
     date.setDate(today.getDate() + i);
     const dateStr = date.toISOString().split('T')[0];
     const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
-    let label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayName;
+    let label = i === 0 ? 'Today' : i === 1 ? 'Tmrw' : dayName;
     dates.push({ value: dateStr, label, day: date.getDate() });
   }
   return dates;
