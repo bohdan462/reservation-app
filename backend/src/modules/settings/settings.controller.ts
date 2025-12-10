@@ -40,7 +40,17 @@ const operatingHoursSchema = z.object({
 
 const specialDateSchema = z.object({
   id: z.string().optional(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  date: z.string().transform((val) => {
+    // If it's already in YYYY-MM-DD format, use it as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+      return val;
+    }
+    // If it's an ISO datetime string, extract just the date part
+    if (val.includes('T')) {
+      return val.split('T')[0];
+    }
+    return val;
+  }).pipe(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
   name: z.string(),
   isClosed: z.boolean(),
   customOpenTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/).nullable().optional(),
