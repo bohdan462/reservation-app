@@ -20,7 +20,13 @@ export class ReservationController {
    */
   createReservation = async (req: Request, res: Response): Promise<void> => {
     try {
+      // Debug: log raw incoming body
+      console.log('[RESERVATION] Incoming body:', req.body);
+
       const validatedData = createReservationSchema.parse(req.body);
+
+      // Debug: log validated data
+      console.log('[RESERVATION] Validated data:', validatedData);
 
       const result = await this.reservationService.createReservation({
         ...validatedData,
@@ -30,6 +36,8 @@ export class ReservationController {
       res.status(201).json(result);
     } catch (error: any) {
       if (error.name === 'ZodError') {
+        // Debug: log zod issues clearly
+        console.error('[RESERVATION] Zod validation failed:', JSON.stringify(error.errors, null, 2));
         res.status(400).json({ error: 'Validation error', details: error.errors });
         return;
       }
