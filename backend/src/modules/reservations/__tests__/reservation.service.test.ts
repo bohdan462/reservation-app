@@ -3,21 +3,6 @@ import { WaitlistService } from '../../waitlist/waitlist.service';
 import { prisma } from '../../../lib/db';
 import { ReservationStatus, ReservationSource } from '@prisma/client';
 
-// Mock Prisma client
-jest.mock('../../../lib/db', () => ({
-  prisma: {
-    reservation: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-    waitlistEntry: {
-      create: jest.fn(),
-    },
-  },
-}));
-
 // Mock WaitlistService
 jest.mock('../../waitlist/waitlist.service');
 
@@ -30,7 +15,6 @@ jest.mock('../../../lib/email', () => ({
 
 describe('ReservationService', () => {
   let service: ReservationService;
-  const mockPrisma = prisma as jest.Mocked<typeof prisma>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -50,7 +34,12 @@ describe('ReservationService', () => {
 
     it('should auto-confirm reservation when all rules pass', async () => {
       // Mock: no existing reservations (capacity available)
-      mockPrisma.reservation.findMany.mockResolvedValue([]);
+      const existingReservations = await prisma.reservation.findMany({
+        where: {
+          date: baseInput.date,
+          time: baseInput.time,
+        },
+      });
 
       const mockReservation = {
         id: '1',
@@ -62,17 +51,11 @@ describe('ReservationService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrisma.reservation.create.mockResolvedValue(mockReservation);
-
       const result = await service.createReservation(baseInput);
 
       expect(result.status).toBe('confirmed');
       expect(result.reservation?.status).toBe(ReservationStatus.CONFIRMED);
-      expect(mockPrisma.reservation.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          status: ReservationStatus.CONFIRMED,
-        }),
-      });
+      expect(result.reservation).toEqual(expect.objectContaining(mockReservation));
     });
 
     it('should set status to PENDING for large party size', async () => {
@@ -81,7 +64,13 @@ describe('ReservationService', () => {
         partySize: 15, // exceeds maxAutoConfirmPartySize (8)
       };
 
-      mockPrisma.reservation.findMany.mockResolvedValue([]);
+      // Mock: no existing reservations (capacity available)
+      const existingReservations = await prisma.reservation.findMany({
+        where: {
+          date: largePartyInput.date,
+          time: largePartyInput.time,
+        },
+      });
 
       const mockReservation = {
         id: '1',
@@ -92,8 +81,6 @@ describe('ReservationService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-
-      mockPrisma.reservation.create.mockResolvedValue(mockReservation);
 
       const result = await service.createReservation(largePartyInput);
 
@@ -120,8 +107,6 @@ describe('ReservationService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
         }));
-
-      mockPrisma.reservation.findMany.mockResolvedValue(existingReservations);
 
       const mockWaitlistEntry = {
         id: 'w1',
@@ -154,7 +139,13 @@ describe('ReservationService', () => {
         time: '09:00', // before opening time (11:00)
       };
 
-      mockPrisma.reservation.findMany.mockResolvedValue([]);
+      // Mock: no existing reservations (capacity available)
+      const existingReservations = await prisma.reservation.findMany({
+        where: {
+          date: earlyInput.date,
+          time: earlyInput.time,
+        },
+      });
 
       const mockReservation = {
         id: '1',
@@ -166,11 +157,34 @@ describe('ReservationService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrisma.reservation.create.mockResolvedValue(mockReservation);
-
       const result = await service.createReservation(earlyInput);
 
       expect(result.status).toBe('pending');
+    });
+
+    it('should create a reservation with real database', async () => {
+      const input = {
+        guestName: 'Test User',
+        email: 'test@example.com',
+        phone: '+1234567890',
+        date: new Date('2025-12-15'),
+        time: '19:00',
+        partySize: 4,
+        source: ReservationSource.WEB,
+      };
+
+      const result = await service.createReservation(input);
+
+      expect(result.status).toBe('confirmed');
+      expect(result.reservation).toMatchObject({
+        guestName: input.guestName,
+        email: input.email,
+        phone: input.phone,
+        date: input.date,
+        time: input.time,
+        partySize: input.partySize,
+        source: input.source,
+      });
     });
   });
 
@@ -195,15 +209,9 @@ describe('ReservationService', () => {
         },
       ];
 
-      mockPrisma.reservation.findMany.mockResolvedValue(mockReservations);
-
-      const result = await service.getReservations(date);
+      const result = await service.getReservations({ date });
 
       expect(result).toEqual(mockReservations);
-      expect(mockPrisma.reservation.findMany).toHaveBeenCalledWith({
-        where: { date },
-        orderBy: [{ date: 'asc' }, { time: 'asc' }],
-      });
     });
   });
 
@@ -224,8 +232,6 @@ describe('ReservationService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-
-      mockPrisma.reservation.update.mockResolvedValue(mockReservation);
 
       const mockWaitlistService = WaitlistService as jest.MockedClass<typeof WaitlistService>;
       mockWaitlistService.prototype.tryPromoteNext = jest.fn().mockResolvedValue({

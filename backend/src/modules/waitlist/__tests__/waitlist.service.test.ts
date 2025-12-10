@@ -2,22 +2,8 @@ import { WaitlistService } from '../waitlist.service';
 import { prisma } from '../../../lib/db';
 import { WaitlistStatus, ReservationStatus } from '@prisma/client';
 
-// Mock Prisma client
-jest.mock('../../../lib/db', () => ({
-  prisma: {
-    waitlistEntry: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    reservation: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-    },
-  },
-}));
+// Remove jest.mock for Prisma
+// Replace mockPrisma references with actual Prisma client calls
 
 // Mock email functions
 jest.mock('../../../lib/email', () => ({
@@ -26,7 +12,6 @@ jest.mock('../../../lib/email', () => ({
 
 describe('WaitlistService', () => {
   let service: WaitlistService;
-  const mockPrisma = prisma as jest.Mocked<typeof prisma>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -53,12 +38,12 @@ describe('WaitlistService', () => {
         promotedAt: null,
       };
 
-      mockPrisma.waitlistEntry.create.mockResolvedValue(mockEntry);
+      prisma.waitlistEntry.create = jest.fn().mockResolvedValue(mockEntry);
 
       const result = await service.createEntry(input);
 
       expect(result).toEqual(mockEntry);
-      expect(mockPrisma.waitlistEntry.create).toHaveBeenCalledWith({
+      expect(prisma.waitlistEntry.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           status: WaitlistStatus.WAITING,
         }),
@@ -85,7 +70,7 @@ describe('WaitlistService', () => {
         promotedAt: null,
       };
 
-      mockPrisma.waitlistEntry.findMany.mockResolvedValue([mockWaitlistEntry]);
+      prisma.waitlistEntry.findMany = jest.fn().mockResolvedValue([mockWaitlistEntry]);
 
       // Mock current capacity (30 covers)
       const existingReservations = [
@@ -106,7 +91,7 @@ describe('WaitlistService', () => {
         },
       ];
 
-      mockPrisma.reservation.findMany.mockResolvedValue(existingReservations);
+      prisma.reservation.findMany = jest.fn().mockResolvedValue(existingReservations);
 
       const mockReservation = {
         id: 'r1',
@@ -124,7 +109,7 @@ describe('WaitlistService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrisma.reservation.create.mockResolvedValue(mockReservation);
+      prisma.reservation.create = jest.fn().mockResolvedValue(mockReservation);
 
       const updatedEntry = {
         ...mockWaitlistEntry,
@@ -133,18 +118,18 @@ describe('WaitlistService', () => {
         promotedAt: new Date(),
       };
 
-      mockPrisma.waitlistEntry.update.mockResolvedValue(updatedEntry);
+      prisma.waitlistEntry.update = jest.fn().mockResolvedValue(updatedEntry);
 
       const result = await service.tryPromoteNext(date, time);
 
       expect(result.promoted).toBe(true);
       expect(result.reservation).toBeDefined();
       expect(result.waitlistEntry?.status).toBe(WaitlistStatus.PROMOTED);
-      expect(mockPrisma.reservation.create).toHaveBeenCalled();
+      expect(prisma.reservation.create).toHaveBeenCalled();
     });
 
     it('should not promote when no waiting entries exist', async () => {
-      mockPrisma.waitlistEntry.findMany.mockResolvedValue([]);
+      prisma.waitlistEntry.findMany = jest.fn().mockResolvedValue([]);
 
       const result = await service.tryPromoteNext(date, time);
 
@@ -167,7 +152,7 @@ describe('WaitlistService', () => {
         promotedAt: null,
       };
 
-      mockPrisma.waitlistEntry.findMany.mockResolvedValue([mockWaitlistEntry]);
+      prisma.waitlistEntry.findMany = jest.fn().mockResolvedValue([mockWaitlistEntry]);
 
       // Mock full capacity (50 covers)
       const existingReservations = [
@@ -188,23 +173,23 @@ describe('WaitlistService', () => {
         },
       ];
 
-      mockPrisma.reservation.findMany.mockResolvedValue(existingReservations);
+      prisma.reservation.findMany = jest.fn().mockResolvedValue(existingReservations);
 
       const result = await service.tryPromoteNext(date, time);
 
       expect(result.promoted).toBe(false);
-      expect(mockPrisma.reservation.create).not.toHaveBeenCalled();
+      expect(prisma.reservation.create).not.toHaveBeenCalled();
     });
   });
 
   describe('expireOldEntries', () => {
     it('should mark old waiting entries as expired', async () => {
-      mockPrisma.waitlistEntry.updateMany.mockResolvedValue({ count: 3 });
+      prisma.waitlistEntry.updateMany = jest.fn().mockResolvedValue({ count: 3 });
 
       const result = await service.expireOldEntries();
 
       expect(result).toBe(3);
-      expect(mockPrisma.waitlistEntry.updateMany).toHaveBeenCalledWith({
+      expect(prisma.waitlistEntry.updateMany).toHaveBeenCalledWith({
         where: {
           status: WaitlistStatus.WAITING,
           date: {

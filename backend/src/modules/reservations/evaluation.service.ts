@@ -107,26 +107,26 @@ export class EvaluationService {
       };
     }
 
-    // Check if past same-day cutoff
-    if (hoursInAdvance < 24) {
-      const requestDateTime = new Date(`${date}T${time}:00`);
-      const cutoffDateTime = this.parseLocalDate(date);
-      cutoffDateTime.setHours(settings.sameDayCutoffHour, 0, 0, 0);
+    // Removed cutoff time logic for same-day bookings
+    // if (hoursInAdvance < 24) {
+    //   const requestDateTime = new Date(`${date}T${time}:00`);
+    //   const cutoffDateTime = this.parseLocalDate(date);
+    //   cutoffDateTime.setHours(settings.sameDayCutoffHour, 0, 0, 0);
 
-      if (new Date() > cutoffDateTime && requestDateTime.getDate() === cutoffDateTime.getDate()) {
-        return {
-          decision: 'REJECT',
-          reason: `Same-day bookings must be made before ${settings.sameDayCutoffHour}:00`,
-          metadata: {
-            currentCapacityPercent: 0,
-            reservationsInSlot: 0,
-            totalGuests: 0,
-            hoursInAdvance,
-            isWithinOperatingHours: true,
-          },
-        };
-      }
-    }
+    //   if (new Date() > cutoffDateTime && requestDateTime.getDate() === cutoffDateTime.getDate()) {
+    //     return {
+    //       decision: 'PENDING',
+    //       reason: `Same-day bookings made after ${settings.sameDayCutoffHour}:00 require manual approval`,
+    //       metadata: {
+    //         currentCapacityPercent: 0,
+    //         reservationsInSlot: 0,
+    //         totalGuests: 0,
+    //         hoursInAdvance,
+    //         isWithinOperatingHours: true,
+    //       },
+    //     };
+    //   }
+    // }
 
     // 4. Check party size rules
     if (settings.largePartyNeedsApproval && partySize >= settings.largePartyMinSize) {

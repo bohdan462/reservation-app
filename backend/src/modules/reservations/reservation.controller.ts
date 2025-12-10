@@ -49,6 +49,10 @@ export class ReservationController {
         res.status(400).json({ error: 'Validation error', details: error.errors });
         return;
       }
+      if (error.message.includes('Same-day bookings')) {
+        res.status(400).json({ error: 'Validation error', message: error.message });
+        return;
+      }
       console.error('Error creating reservation:', error);
       // In development, include error details to aid debugging
       if (process.env.NODE_ENV !== 'production') {
