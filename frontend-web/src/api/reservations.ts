@@ -46,7 +46,24 @@ export interface CreateReservationResponse {
   message: string;
 }
 
-const API_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE) || 'http://localhost:3002';
+function normalizeApiBase(raw?: string): string {
+  const val = (raw || '').trim();
+  if (!val) return 'http://localhost:3002';
+  // Already absolute
+  if (/^https?:\/\//i.test(val)) return val;
+  // If starts with //, assume https
+  if (/^\/\//.test(val)) return `https:${val}`;
+  // If starts with /, make it origin-relative
+  if (/^\//.test(val)) return `${window.location.origin}${val}`;
+  // Otherwise, treat as hostname and default to https
+  return `https://${val}`;
+}
+
+const API_BASE_URL = normalizeApiBase(
+  typeof import.meta !== 'undefined' && (import.meta as any).env
+    ? (import.meta as any).env.VITE_API_BASE
+    : undefined
+);
 
 export async function createReservation(
   data: CreateReservationRequest
