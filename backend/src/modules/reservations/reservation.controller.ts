@@ -15,7 +15,7 @@ export class ReservationController {
   }
 
   /**
-   * POST /api/reservations
+   * Create Reservation - POST /api/reservations
    * Create a new reservation
    */
   createReservation = async (req: Request, res: Response): Promise<void> => {
@@ -39,7 +39,7 @@ export class ReservationController {
   };
 
   /**
-   * GET /api/reservations
+   * List Reservations - GET /api/reservations
    * Get reservations with optional filters
    */
   getReservations = async (req: Request, res: Response): Promise<void> => {
@@ -63,7 +63,7 @@ export class ReservationController {
   };
 
   /**
-   * GET /api/reservations/:id
+   * Get Reservation by ID - GET /api/reservations/:id
    * Get a single reservation
    */
   getReservationById = async (req: Request, res: Response): Promise<void> => {
@@ -84,7 +84,7 @@ export class ReservationController {
   };
 
   /**
-   * PATCH /api/reservations/:id
+   * Update Reservation - PATCH /api/reservations/:id
    * Update a reservation
    */
   updateReservation = async (req: Request, res: Response): Promise<void> => {
@@ -106,7 +106,7 @@ export class ReservationController {
   };
 
   /**
-   * POST /api/reservations/:id/cancel
+   * Cancel Reservation (Internal) - POST /api/reservations/:id/cancel
    * Cancel a reservation (internal use)
    */
   cancelReservation = async (req: Request, res: Response): Promise<void> => {
@@ -122,7 +122,7 @@ export class ReservationController {
   };
 
   /**
-   * GET /reservations/cancel/:cancelToken
+   * Cancel Reservation (Guest Token) - GET /reservations/cancel/:cancelToken
    * Cancel a reservation via token (guest-facing)
    */
   cancelByToken = async (req: Request, res: Response): Promise<void> => {

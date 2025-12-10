@@ -46,7 +46,7 @@ export interface CreateReservationResponse {
   message: string;
 }
 
-const API_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE) || '';
+const API_BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_BASE) || 'http://localhost:3002';
 
 export async function createReservation(
   data: CreateReservationRequest

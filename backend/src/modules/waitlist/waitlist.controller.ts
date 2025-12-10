@@ -15,7 +15,7 @@ export class WaitlistController {
   }
 
   /**
-   * POST /api/waitlist
+   * Create Waitlist Entry - POST /api/waitlist
    * Create a new waitlist entry
    */
   createEntry = async (req: Request, res: Response): Promise<void> => {
@@ -39,7 +39,7 @@ export class WaitlistController {
   };
 
   /**
-   * GET /api/waitlist
+   * List Waitlist Entries - GET /api/waitlist
    * Get waitlist entries with optional filters
    */
   getEntries = async (req: Request, res: Response): Promise<void> => {
@@ -63,7 +63,7 @@ export class WaitlistController {
   };
 
   /**
-   * GET /api/waitlist/:id
+   * Get Waitlist Entry by ID - GET /api/waitlist/:id
    * Get a single waitlist entry
    */
   getEntryById = async (req: Request, res: Response): Promise<void> => {
@@ -84,7 +84,7 @@ export class WaitlistController {
   };
 
   /**
-   * PATCH /api/waitlist/:id
+   * Update Waitlist Entry - PATCH /api/waitlist/:id
    * Update a waitlist entry
    */
   updateEntry = async (req: Request, res: Response): Promise<void> => {
