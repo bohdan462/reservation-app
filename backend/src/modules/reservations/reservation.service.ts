@@ -38,6 +38,11 @@ export class ReservationService {
    */
   async createReservation(input: CreateReservationInput): Promise<ReservationResult> {
     const now = new Date();
+      // Normalize phone: input.phone may be digits-only from Zod transform
+      const digits = input.phone.replace(/\D/g, '');
+      const formattedPhone = digits.length === 11
+        ? `+${digits[0]} (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7,11)}`
+        : input.phone;
     const decision = await this.shouldAutoConfirm(input.date, input.time, input.partySize, now);
 
     if (decision.shouldWaitlist) {
@@ -45,7 +50,7 @@ export class ReservationService {
       const waitlistEntry = await this.waitlistService.createEntry({
         guestName: input.guestName,
         email: input.email,
-        phone: input.phone,
+          phone: formattedPhone,
         date: input.date,
         time: input.time,
         partySize: input.partySize,
@@ -77,7 +82,7 @@ export class ReservationService {
       data: {
         guestName: input.guestName,
         email: input.email,
-        phone: input.phone,
+          phone: formattedPhone,
         date: input.date,
         time: input.time,
         partySize: input.partySize,

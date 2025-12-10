@@ -3,7 +3,13 @@ import { z } from 'zod';
 export const createReservationSchema = z.object({
   guestName: z.string().min(1, 'Guest name is required'),
   email: z.string().email('Valid email is required'),
-  phone: z.string().regex(/^\+1 \(\d{3}\) \d{3}-\d{4}$/, 'Phone must be in format: +1 (XXX) XXX-XXXX'),
+  // Accept any input, strip non-digits, require US 11 digits starting with 1
+  phone: z
+    .string()
+    .transform((s) => s.replace(/\D/g, ''))
+    .refine((digits) => /^1\d{10}$/.test(digits), {
+      message: 'Phone must be a US number: +1 (XXX) XXX-XXXX',
+    }),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/, 'Time must be in HH:mm or HH:mm:ss format'),
   partySize: z.number().int().min(1).max(20),
