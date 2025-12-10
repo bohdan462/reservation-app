@@ -310,7 +310,7 @@
 .chip.pill.selected {
   background: var(--blue-50);
   border-color: var(--blue-500);
-  color: var(--blue-500);
+  color: var(--gray-900);
 }
 
 /* =============================================
