@@ -1,0 +1,663 @@
+/* =============================================
+   RESERVATION FORM - CLEAN MINIMAL DESIGN
+   Consistent sizing, fluid animations
+   ============================================= */
+
+/* Variables */
+:root {
+  --white: #ffffff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-900: #111827;
+  
+  --blue-500: #0057b7;
+  --blue-600: #004494;
+  --blue-50: #eff6ff;
+  
+  --red-500: #ef4444;
+  --red-50: #fef2f2;
+  
+  --green-500: #22c55e;
+  --green-50: #f0fdf4;
+  
+  --orange-500: #f97316;
+  
+  --radius: 10px;
+  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =============================================
+   SKELETON LOADING
+   ============================================= */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.skeleton-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-line {
+  height: 14px;
+  width: 100px;
+  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-line.title {
+  width: 120px;
+  margin-bottom: 4px;
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.skeleton-row.wide {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.skeleton-chip {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius);
+}
+
+.skeleton-chip.wide {
+  width: 72px;
+  height: 40px;
+}
+
+.skeleton-chip.square {
+  width: 44px;
+  height: 44px;
+}
+
+/* =============================================
+   FORM STRUCTURE
+   ============================================= */
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Section animations */
+@keyframes unfold {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.section.visible {
+  display: flex;
+  animation: unfold 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.section:first-of-type {
+  padding-top: 0;
+}
+
+.section:last-of-type,
+.section.contact {
+  border-bottom: none;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.optional {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray-400);
+  background: var(--gray-100);
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+/* =============================================
+   CHIPS - UNIFIED SIZING
+   ============================================= */
+
+.chips {
+  display: flex;
+  gap: 8px;
+}
+
+.chips.scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chips.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.chips.wrap {
+  flex-wrap: wrap;
+}
+
+/* Base chip - all chips inherit from this */
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+  text-align: center;
+}
+
+.chip:hover {
+  background: var(--gray-100);
+  border-color: var(--gray-300);
+}
+
+.chip.selected {
+  background: var(--blue-500);
+  border-color: var(--blue-500);
+  color: var(--white);
+}
+
+.chip.selected .chip-sub,
+.chip.selected .chip-main {
+  color: var(--white);
+}
+
+/* Chip text */
+.chip-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--gray-500);
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.chip-main {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--gray-900);
+  line-height: 1.2;
+}
+
+/* Time chips - horizontal layout */
+.chip.time {
+  flex-direction: row;
+  width: auto;
+  height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-700);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.chip.time.peak {
+  border-color: var(--orange-500);
+}
+
+.chip.time.selected {
+  color: var(--white);
+  border-color: var(--blue-500);
+}
+
+.peak-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  background: var(--orange-500);
+  border-radius: 50%;
+}
+
+.chip.time.selected .peak-dot {
+  background: var(--white);
+}
+
+/* Square chips for party size */
+.chip.square {
+  width: 44px;
+  height: 44px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+/* Pill chips for occasions & dietary */
+.chip.pill {
+  flex-direction: row;
+  width: auto;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-700);
+  border-radius: 100px;
+}
+
+.chip.pill.selected {
+  background: var(--blue-50);
+  border-color: var(--blue-500);
+  color: var(--blue-500);
+}
+
+/* =============================================
+   INPUTS
+   ============================================= */
+
+.input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--gray-900);
+  transition: border-color var(--transition);
+}
+
+.input::placeholder {
+  color: var(--gray-400);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--blue-500);
+}
+
+.input.error {
+  border-color: var(--red-500);
+}
+
+.input.small {
+  width: 80px;
+  text-align: center;
+}
+
+.input.date-input {
+  width: auto;
+  max-width: 180px;
+  margin-top: 4px;
+}
+
+.input.textarea {
+  height: auto;
+  min-height: 70px;
+  padding: 12px 14px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.custom-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  animation: unfold 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hint {
+  font-size: 14px;
+  color: var(--gray-500);
+}
+
+/* =============================================
+   CONTACT SECTION
+   ============================================= */
+
+.section.contact {
+  background: var(--gray-50);
+  margin: 20px -24px 0;
+  padding: 24px !important;
+  border-radius: 0 0 16px 16px;
+}
+
+.oauth-row {
+  display: flex;
+  gap: 10px;
+}
+
+.oauth {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.oauth:hover:not(:disabled) {
+  background: var(--gray-100);
+  border-color: var(--gray-300);
+}
+
+.oauth:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.oauth.apple {
+  background: var(--gray-900);
+  border-color: var(--gray-900);
+  color: var(--white);
+}
+
+.oauth.apple:hover:not(:disabled) {
+  background: var(--gray-700);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gray-200);
+}
+
+.divider span {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-600);
+}
+
+/* =============================================
+   BUTTONS
+   ============================================= */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 24px;
+  background: var(--blue-500);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--white);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--blue-600);
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn.submit {
+  margin-top: 24px;
+  width: 100%;
+}
+
+/* Spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--white);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* =============================================
+   ERROR STATES
+   ============================================= */
+
+.error-banner {
+  padding: 12px 16px;
+  background: var(--red-50);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius);
+  color: var(--red-500);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.error-text {
+  font-size: 12px;
+  color: var(--red-500);
+  margin-top: 4px;
+}
+
+/* =============================================
+   RESULT VIEW
+   ============================================= */
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 0;
+  animation: unfold 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.result-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 28px;
+  margin-bottom: 20px;
+}
+
+.result-icon.confirmed {
+  background: var(--green-50);
+  color: var(--green-500);
+}
+
+.result-icon.pending {
+  background: #fffbeb;
+  color: #f59e0b;
+}
+
+.result-icon.waitlisted {
+  background: var(--blue-50);
+  color: var(--blue-500);
+}
+
+.result-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0 0 8px;
+}
+
+.result-message {
+  font-size: 14px;
+  color: var(--gray-500);
+  margin: 0 0 24px;
+  max-width: 280px;
+}
+
+.result-card {
+  width: 100%;
+  max-width: 280px;
+  background: var(--gray-50);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.result-row:last-child {
+  border-bottom: none;
+}
+
+.result-label {
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
+.result-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-900);
+}
+
+.result-note {
+  font-size: 13px;
+  color: var(--gray-400);
+  margin: 0 0 20px;
+}
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+
+@media (max-width: 480px) {
+  .section.contact {
+    margin: 20px -20px 0;
+    padding: 20px !important;
+  }
+  
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .oauth-row {
+    flex-direction: column;
+  }
+  
+  .chip {
+    width: 52px;
+    height: 52px;
+  }
+  
+  .chip.square {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .chip-main {
+    font-size: 16px;
+  }
+}
+
+/* =============================================
+   FOCUS STATES
+   ============================================= */
+
+.chip:focus-visible,
+.input:focus-visible,
+.btn:focus-visible,
+.oauth:focus-visible {
+  outline: 2px solid var(--blue-500);
+  outline-offset: 2px;
+}
