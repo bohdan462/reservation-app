@@ -55,8 +55,8 @@ const updateSettingsSchema = z.object({
   restaurantName: z.string().optional(),
   capacity: z.object({
     diningRoomSeats: z.number().int().positive().optional(),
-    barSeats: z.number().int().positive().optional(),
-    outdoorSeats: z.number().int().positive().optional(),
+    barSeats: z.number().int().min(0).optional(),
+    outdoorSeats: z.number().int().min(0).optional(),
     maxReservationsPerSlot: z.number().int().positive().optional(),
     turnoverMinutes: z.number().int().positive().optional(),
   }).optional(),
