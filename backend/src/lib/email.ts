@@ -21,6 +21,10 @@ function getTransporter() {
         user: config.email.smtpUser,
         pass: config.email.smtpPass,
       },
+      // Add connection timeout settings for Railway
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
   }
   return transporter;
@@ -42,7 +46,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
   
   if (smtp) {
     try {
-      // Send with 10 second timeout
+      // Send with 30 second timeout (Railway can be slower)
       await Promise.race([
         smtp.sendMail({
           from: config.email.fromEmail,
@@ -52,12 +56,13 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
           html: options.html,
         }),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Email timeout after 10s')), 10000)
+          setTimeout(() => reject(new Error('Email timeout after 30s')), 30000)
         )
       ]);
       console.log('[EMAIL] ✅ Email sent successfully to:', options.to);
     } catch (error: any) {
       console.error('[EMAIL] ❌ Failed to send email:', error.message);
+      console.error('[EMAIL] Error details:', error);
       console.log('[EMAIL] Body (for debugging):', options.text);
       // Don't throw - just log the error so API continues
     }
