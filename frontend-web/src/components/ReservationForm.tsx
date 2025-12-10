@@ -142,10 +142,43 @@ export default function ReservationForm() {
     return () => clearTimeout(timer);
   }, []);
 
+  
+
   const showTime = !!formData.date;
   const showPartySize = !!formData.time;
   const showOptional = !!formData.partySize;
   const showContact = showOptional;
+
+  // Temporary on-screen debug overlay for mobile testing
+  useEffect(() => {
+    const id = 'rf-debug-overlay';
+    let el = document.getElementById(id) as HTMLDivElement | null;
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      Object.assign(el.style, {
+        position: 'fixed',
+        bottom: '12px',
+        right: '12px',
+        background: 'rgba(0,0,0,0.7)',
+        color: '#fff',
+        padding: '8px 10px',
+        borderRadius: '8px',
+        fontSize: '12px',
+        zIndex: '9999',
+        maxWidth: '80vw',
+        wordBreak: 'keep-all',
+      });
+      document.body.appendChild(el);
+    }
+
+    el.textContent = `isLoading:${isLoading} date:${formData.date || '-'} time:${formData.time || '-'} party:${formData.partySize || '-'} showContact:${showContact}`;
+
+    return () => {
+      const existing = document.getElementById(id);
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+    };
+  }, [isLoading, formData.date, formData.time, formData.partySize, showContact]);
 
   useEffect(() => {
     if (formData.time && timeScrollRef.current) {
