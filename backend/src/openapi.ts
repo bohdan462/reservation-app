@@ -131,6 +131,7 @@ export const openapiSpec: OpenAPIV3.Document = {
       patch: {
         tags: ['Reservations'],
         summary: 'Update reservation',
+        description: 'Update any reservation fields. All fields are optional - send only what you want to update.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
         ],
@@ -141,11 +142,18 @@ export const openapiSpec: OpenAPIV3.Document = {
               schema: {
                 type: 'object',
                 properties: {
+                  guestName: { type: 'string', description: 'Guest name' },
+                  email: { type: 'string', format: 'email', description: 'Email address' },
+                  phone: { type: 'string', description: 'Phone number (auto-formatted to +1 (XXX) XXX-XXXX)' },
+                  date: { type: 'string', format: 'date', description: 'Reservation date (YYYY-MM-DD)' },
+                  time: { type: 'string', example: '19:00', description: 'Reservation time (HH:mm)' },
+                  partySize: { type: 'integer', minimum: 1, maximum: 20, description: 'Number of guests' },
                   status: {
                     type: 'string',
                     enum: ['PENDING', 'CONFIRMED', 'CANCELLED'],
+                    description: 'Reservation status'
                   },
-                  notes: { type: 'string' },
+                  notes: { type: 'string', description: 'Additional notes' },
                 },
               },
             },
@@ -163,6 +171,32 @@ export const openapiSpec: OpenAPIV3.Document = {
               },
             },
           },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Reservation not found' },
+        },
+      },
+      delete: {
+        tags: ['Reservations'],
+        summary: 'Delete reservation',
+        description: 'Permanently delete a reservation',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': {
+            description: 'Reservation deleted',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    message: { type: 'string', example: 'Reservation deleted successfully' },
+                  },
+                },
+              },
+            },
+          },
+          '404': { description: 'Reservation not found' },
         },
       },
     },
