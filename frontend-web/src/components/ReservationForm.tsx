@@ -325,6 +325,45 @@ export default function ReservationForm() {
     <form onSubmit={handleSubmit} className="reservation-form">
       {submitError && <div className="error-message">{submitError}</div>}
 
+      {/* Debug Panel */}
+      <div style={{
+        background: '#1a1a1a',
+        border: '1px solid #333',
+        borderRadius: '8px',
+        padding: '16px',
+        marginBottom: '24px',
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#0f0'
+      }}>
+        <div style={{ color: '#fff', marginBottom: '8px', fontWeight: 'bold' }}>📊 Debug Data Preview:</div>
+        <div style={{ color: '#888' }}>Guest Name: <span style={{ color: '#0f0' }}>{formData.guestName || '(empty)'}</span></div>
+        <div style={{ color: '#888' }}>Email: <span style={{ color: '#0f0' }}>{formData.email || '(empty)'}</span></div>
+        <div style={{ color: '#888' }}>Phone: <span style={{ color: '#0f0' }}>{formData.phone || '(empty)'}</span> 
+          {formData.phone && (
+            <span style={{ color: /^\+1 \(\d{3}\) \d{3}-\d{4}$/.test(formData.phone) ? '#0f0' : '#f00' }}>
+              {' '}[{/^\+1 \(\d{3}\) \d{3}-\d{4}$/.test(formData.phone) ? '✓' : '✗'} Pattern]
+            </span>
+          )}
+        </div>
+        <div style={{ color: '#888' }}>Date: <span style={{ color: '#0f0' }}>{formData.date || '(empty)'}</span>
+          {formData.date && (
+            <span style={{ color: /^\d{4}-\d{2}-\d{2}$/.test(formData.date) ? '#0f0' : '#f00' }}>
+              {' '}[{/^\d{4}-\d{2}-\d{2}$/.test(formData.date) ? '✓' : '✗'} Pattern]
+            </span>
+          )}
+        </div>
+        <div style={{ color: '#888' }}>Time: <span style={{ color: '#0f0' }}>{formData.time || '(empty)'}</span>
+          {formData.time && (
+            <span style={{ color: /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/.test(formData.time) ? '#0f0' : '#f00' }}>
+              {' '}[{/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/.test(formData.time) ? '✓' : '✗'} Pattern]
+            </span>
+          )}
+        </div>
+        <div style={{ color: '#888' }}>Party Size: <span style={{ color: '#0f0' }}>{formData.partySize}</span></div>
+        <div style={{ color: '#888' }}>Notes: <span style={{ color: '#0f0' }}>{formData.notes || '(empty)'}</span></div>
+      </div>
+
       <div className="form-group">
         <label htmlFor="guestName" className="form-label">
           Your Name *
