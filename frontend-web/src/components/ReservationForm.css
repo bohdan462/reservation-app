@@ -313,6 +313,13 @@
   color: var(--gray-900);
 }
 
+/* Ensure pill chips keep dark text when selected (override generic .chip.selected white color) */
+.chip.pill.selected,
+.chip.pill.selected .chip-sub,
+.chip.pill.selected .chip-main {
+  color: var(--gray-900) !important;
+}
+
 /* =============================================
    INPUTS
    ============================================= */
