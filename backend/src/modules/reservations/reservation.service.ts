@@ -89,9 +89,11 @@ export class ReservationService {
         );
       }
 
+      // Return waitlist entry with date as YYYY-MM-DD to avoid client timezone shifts
+      const serializedWaitlist = { ...waitlistEntry, date: formatDateLocal(waitlistEntry.date as Date) };
       return {
         status: 'waitlisted',
-        waitlistEntry,
+        waitlistEntry: serializedWaitlist,
         message: evaluation.reason,
       };
     }
@@ -166,9 +168,12 @@ export class ReservationService {
       );
     }
 
+    // Serialize reservation date as YYYY-MM-DD to avoid client timezone interpretation issues
+    const serializedReservation = { ...reservation, date: formatDateLocal(reservation.date as Date) };
+
     return {
       status: status === ReservationStatus.CONFIRMED ? 'confirmed' : 'pending',
-      reservation,
+      reservation: serializedReservation as any,
       message: evaluation.reason,
     };
   }
