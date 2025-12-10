@@ -120,7 +120,18 @@ export default function ReservationForm() {
     e.preventDefault();
     setSubmitError('');
 
+    console.log('=== FORM SUBMISSION DEBUG ===');
+    console.log('Raw form data:', formData);
+    console.log('Guest Name:', formData.guestName);
+    console.log('Email:', formData.email);
+    console.log('Phone:', formData.phone);
+    console.log('Date:', formData.date);
+    console.log('Time:', formData.time);
+    console.log('Party Size:', formData.partySize);
+    console.log('Notes:', formData.notes);
+
     if (!validateForm()) {
+      console.log('Validation failed with errors:', errors);
       return;
     }
 
@@ -143,7 +154,9 @@ export default function ReservationForm() {
         source: 'WEB' as const,
       };
 
-      console.log('Sending reservation request:', requestData);
+      console.log('=== REQUEST DATA TO BACKEND ===');
+      console.log('Request object:', requestData);
+      console.log('Stringified:', JSON.stringify(requestData, null, 2));
 
       const response = await createReservation(requestData);
 
