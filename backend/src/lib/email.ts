@@ -1,5 +1,5 @@
 import { config } from '../config';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 interface EmailOptions {
   to: string;
@@ -8,32 +8,19 @@ interface EmailOptions {
   html?: string;
 }
 
-// Create reusable transporter
-let transporter: nodemailer.Transporter | null = null;
+// Initialize Resend client
+let resend: Resend | null = null;
 
-function getTransporter() {
-  if (!transporter && config.email.smtpHost && config.email.smtpUser && config.email.smtpPass) {
-    transporter = nodemailer.createTransport({
-      host: config.email.smtpHost,
-      port: config.email.smtpPort,
-      secure: config.email.smtpPort === 465, // true for 465, false for other ports
-      auth: {
-        user: config.email.smtpUser,
-        pass: config.email.smtpPass,
-      },
-      // Add connection timeout settings for Railway
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-    });
+function getResendClient() {
+  if (!resend && process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY);
   }
-  return transporter;
+  return resend;
 }
 
 /**
- * Send email using nodemailer with timeout
- * Falls back to console logging if SMTP is not configured
- * Runs with timeout to avoid blocking API response too long
+ * Send email using Resend API (works on Railway - uses HTTPS not SMTP)
+ * Falls back to console logging if API key is not configured
  */
 export async function sendEmail(options: EmailOptions): Promise<void> {
   console.log('[EMAIL] Sending email:', {
@@ -42,24 +29,23 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
     subject: options.subject,
   });
   
-  const smtp = getTransporter();
+  const client = getResendClient();
   
-  if (smtp) {
+  if (client) {
     try {
-      // Send with 30 second timeout (Railway can be slower)
-      await Promise.race([
-        smtp.sendMail({
-          from: config.email.fromEmail,
-          to: options.to,
-          subject: options.subject,
-          text: options.text,
-          html: options.html,
-        }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Email timeout after 30s')), 30000)
-        )
-      ]);
-      console.log('[EMAIL] ✅ Email sent successfully to:', options.to);
+      const { data, error } = await client.emails.send({
+        from: config.email.fromEmail,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('[EMAIL] ✅ Email sent successfully to:', options.to, 'ID:', data?.id);
     } catch (error: any) {
       console.error('[EMAIL] ❌ Failed to send email:', error.message);
       console.error('[EMAIL] Error details:', error);
@@ -67,8 +53,8 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
       // Don't throw - just log the error so API continues
     }
   } else {
-    // Fallback: just log it (for development without SMTP configured)
-    console.log('[EMAIL] ⚠️  SMTP not configured, logging email body:');
+    // Fallback: just log it (for development without API key configured)
+    console.log('[EMAIL] ⚠️  Resend API key not configured, logging email body:');
     console.log('[EMAIL] Body:', options.text);
   }
 }
