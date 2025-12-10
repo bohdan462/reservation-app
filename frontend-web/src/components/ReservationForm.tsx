@@ -99,12 +99,17 @@ export default function ReservationForm() {
     setIsSubmitting(true);
 
     try {
+      // Normalize time to HH:mm format (remove seconds if present)
+      const normalizedTime = formData.time.includes(':') 
+        ? formData.time.split(':').slice(0, 2).join(':')
+        : formData.time;
+
       const response = await createReservation({
         guestName: formData.guestName,
         email: formData.email,
         phone: formData.phone,
         date: formData.date,
-        time: formData.time,
+        time: normalizedTime,
         partySize: parseInt(formData.partySize),
         notes: formData.notes || undefined,
         source: 'WEB',
@@ -328,14 +333,26 @@ export default function ReservationForm() {
           <label htmlFor="time" className="form-label">
             Time *
           </label>
-          <input
-            type="time"
+          <select
             id="time"
             name="time"
             value={formData.time}
             onChange={handleChange}
-            className="form-input"
-          />
+            className="form-select"
+          >
+            <option value="">Select a time</option>
+            <option value="17:00">5:00 PM</option>
+            <option value="17:30">5:30 PM</option>
+            <option value="18:00">6:00 PM</option>
+            <option value="18:30">6:30 PM</option>
+            <option value="19:00">7:00 PM</option>
+            <option value="19:30">7:30 PM</option>
+            <option value="20:00">8:00 PM</option>
+            <option value="20:30">8:30 PM</option>
+            <option value="21:00">9:00 PM</option>
+            <option value="21:30">9:30 PM</option>
+            <option value="22:00">10:00 PM</option>
+          </select>
           {errors.time && <span className="form-error">{errors.time}</span>}
         </div>
       </div>

@@ -6,7 +6,7 @@ function App() {
     <div className="reservation-app">
       <header className="app-header">
         <h1>Reserve Your Table</h1>
-        <p>Book your dining experience with us</p>
+        <p>Secure your spot in moments</p>
       </header>
       <main className="app-content">
         <ReservationForm />
