@@ -106,33 +106,44 @@
   flex-direction: column;
 }
 
-/* Section animations */
-@keyframes unfold {
-  from {
+/* Section animations - slide from bottom, expand */
+@keyframes slideUp {
+  0% {
     opacity: 0;
-    transform: translateY(-12px);
+    transform: translateY(20px);
+    max-height: 0;
   }
-  to {
+  100% {
     opacity: 1;
     transform: translateY(0);
+    max-height: 500px;
   }
 }
 
 .section {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 20px 0;
   border-bottom: 1px solid var(--gray-200);
+  overflow: hidden;
+  opacity: 0;
+  max-height: 0;
+  padding: 0;
+  pointer-events: none;
 }
 
 .section.visible {
-  display: flex;
-  animation: unfold 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
+  max-height: 500px;
+  padding: 20px 0;
+  pointer-events: auto;
+  animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-.section:first-of-type {
+.section:first-of-type.visible {
   padding-top: 0;
+  animation: none;
 }
 
 .section:last-of-type,
@@ -210,12 +221,12 @@
 .chip.selected {
   background: var(--blue-500);
   border-color: var(--blue-500);
-  color: var(--white);
+  color: var(--white) !important;
 }
 
 .chip.selected .chip-sub,
 .chip.selected .chip-main {
-  color: var(--white);
+  color: var(--white) !important;
 }
 
 /* Chip text */
