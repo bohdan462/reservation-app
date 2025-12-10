@@ -122,12 +122,15 @@ export default function ReservationForm() {
 
     console.log('=== FORM SUBMISSION DEBUG ===');
     console.log('Raw form data:', formData);
-    console.log('Guest Name:', formData.guestName);
-    console.log('Email:', formData.email);
-    console.log('Phone:', formData.phone);
-    console.log('Date:', formData.date);
-    console.log('Time:', formData.time);
-    console.log('Party Size:', formData.partySize);
+    console.log('Guest Name:', formData.guestName, '| Type:', typeof formData.guestName);
+    console.log('Email:', formData.email, '| Type:', typeof formData.email);
+    console.log('Phone:', formData.phone, '| Type:', typeof formData.phone);
+    console.log('Phone Regex Test:', /^\+1 \(\d{3}\) \d{3}-\d{4}$/.test(formData.phone));
+    console.log('Date:', formData.date, '| Type:', typeof formData.date);
+    console.log('Date Regex Test:', /^\d{4}-\d{2}-\d{2}$/.test(formData.date));
+    console.log('Time:', formData.time, '| Type:', typeof formData.time);
+    console.log('Time Regex Test:', /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/.test(formData.time));
+    console.log('Party Size:', formData.partySize, '| Type:', typeof formData.partySize);
     console.log('Notes:', formData.notes);
 
     if (!validateForm()) {
@@ -138,6 +141,14 @@ export default function ReservationForm() {
     setIsSubmitting(true);
 
     try {
+      // Ensure date is in YYYY-MM-DD format
+      let normalizedDate = formData.date;
+      if (formData.date && !formData.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const dateObj = new Date(formData.date);
+        normalizedDate = dateObj.toISOString().split('T')[0];
+        console.log('Date normalized from', formData.date, 'to', normalizedDate);
+      }
+
       // Normalize time to HH:mm format (remove seconds if present)
       const normalizedTime = formData.time.includes(':') 
         ? formData.time.split(':').slice(0, 2).join(':')
@@ -147,7 +158,7 @@ export default function ReservationForm() {
         guestName: formData.guestName,
         email: formData.email,
         phone: formData.phone,
-        date: formData.date,
+        date: normalizedDate,
         time: normalizedTime,
         partySize: parseInt(formData.partySize),
         notes: formData.notes || undefined,
