@@ -400,6 +400,7 @@
   justify-content: center;
   gap: 8px;
   height: 44px;
+  min-height: 44px;
   background: var(--white);
   border: 1px solid var(--gray-200);
   border-radius: var(--radius);
@@ -485,6 +486,7 @@
   justify-content: center;
   gap: 8px;
   height: 48px;
+  min-height: 48px;
   padding: 0 24px;
   background: var(--blue-500);
   border: none;
