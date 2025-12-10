@@ -6,6 +6,7 @@ import {
   getReservationsQuerySchema,
 } from './reservation.schema';
 import { ReservationStatus } from '@prisma/client';
+import { getReservationHistory } from '../../lib/reservationHistory';
 
 export class ReservationController {
   private reservationService: ReservationService;
@@ -147,6 +148,22 @@ export class ReservationController {
         return;
       }
       console.error('Error deleting reservation:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
+  /**
+   * Get Reservation History - GET /api/reservations/:id/history
+   * Get timeline of all changes to a reservation (for internal use)
+   */
+  getHistory = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const history = await getReservationHistory(id);
+
+      res.json({ history });
+    } catch (error) {
+      console.error('Error fetching reservation history:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   };

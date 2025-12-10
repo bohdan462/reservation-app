@@ -30,6 +30,21 @@ enum WaitlistStatus {
   EXPIRED
 }
 
+enum ReservationChangeType {
+  CREATED
+  UPDATED
+  CANCELLED
+  CONFIRMED
+  SEATED
+  NO_SHOW
+}
+
+enum ChangeActor {
+  GUEST
+  STAFF
+  SYSTEM
+}
+
 model Reservation {
   id              String            @id @default(cuid())
   guestName       String
@@ -44,10 +59,27 @@ model Reservation {
   cancelToken     String            @unique @default(cuid())
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+  
+  history         ReservationHistory[]
 
   @@index([date, time])
   @@index([cancelToken])
   @@index([status])
+}
+
+model ReservationHistory {
+  id              String                 @id @default(cuid())
+  reservationId   String
+  reservation     Reservation            @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  changeType      ReservationChangeType
+  actor           ChangeActor
+  previousData    Json?                  // Store previous state for updates
+  newData         Json?                  // Store new state
+  notes           String?                // Optional note about the change
+  createdAt       DateTime               @default(now())
+
+  @@index([reservationId])
+  @@index([createdAt])
 }
 
 model WaitlistEntry {

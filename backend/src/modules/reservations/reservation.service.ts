@@ -7,6 +7,7 @@ import {
   sendReservationPending,
   sendWaitlistConfirmation,
 } from '../../lib/email';
+import { logReservationChange } from '../../lib/reservationHistory';
 
 export interface CreateReservationInput {
   guestName: string;
@@ -91,6 +92,35 @@ export class ReservationService {
         status,
       },
     });
+
+    // Log creation in history
+    await logReservationChange(
+      reservation.id,
+      'CREATED',
+      input.source === 'WEB' ? 'GUEST' : 'STAFF',
+      undefined,
+      {
+        guestName: reservation.guestName,
+        email: reservation.email,
+        phone: reservation.phone,
+        date: reservation.date,
+        time: reservation.time,
+        partySize: reservation.partySize,
+        status: reservation.status,
+      }
+    );
+
+    // If auto-confirmed, log that too
+    if (status === ReservationStatus.CONFIRMED) {
+      await logReservationChange(
+        reservation.id,
+        'CONFIRMED',
+        'SYSTEM',
+        undefined,
+        undefined,
+        'Auto-confirmed based on party size and availability'
+      );
+    }
 
     // Send appropriate email
     if (status === ReservationStatus.CONFIRMED) {
@@ -336,6 +366,16 @@ export class ReservationService {
       throw new Error('Reservation already cancelled');
     }
 
+    // Log guest cancellation
+    await logReservationChange(
+      reservation.id,
+      'CANCELLED',
+      'GUEST',
+      { status: reservation.status },
+      { status: 'CANCELLED' },
+      'Guest cancelled via email link'
+    );
+
     return this.cancelReservation(reservation.id);
   }
 
@@ -377,10 +417,32 @@ export class ReservationService {
       data.status = ReservationStatus.PENDING;
     }
 
-    return prisma.reservation.update({
+    const updated = await prisma.reservation.update({
       where: { cancelToken },
       data,
     });
+
+    // Log guest update
+    await logReservationChange(
+      reservation.id,
+      'UPDATED',
+      'GUEST',
+      {
+        date: reservation.date,
+        time: reservation.time,
+        partySize: reservation.partySize,
+        status: reservation.status,
+      },
+      {
+        date: updated.date,
+        time: updated.time,
+        partySize: updated.partySize,
+        status: updated.status,
+      },
+      'Guest updated via email link'
+    );
+
+    return updated;
   }
 }
 
