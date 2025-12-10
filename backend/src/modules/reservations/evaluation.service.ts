@@ -62,20 +62,20 @@ export class EvaluationService {
       };
     }
 
-    // 2. Check advance booking window
-    if (hoursInAdvance < settings.minHoursInAdvance) {
-      return {
-        decision: 'REJECT',
-        reason: `Must book at least ${settings.minHoursInAdvance} hours in advance`,
-        metadata: {
-          currentCapacityPercent: 0,
-          reservationsInSlot: 0,
-          totalGuests: 0,
-          hoursInAdvance,
-          isWithinOperatingHours: true,
-        },
-      };
-    }
+    // Removed advance booking window restriction
+    // if (hoursInAdvance < settings.minHoursInAdvance) {
+    //   return {
+    //     decision: 'REJECT',
+    //     reason: `Must book at least ${settings.minHoursInAdvance} hours in advance`,
+    //     metadata: {
+    //       currentCapacityPercent: 0,
+    //       reservationsInSlot: 0,
+    //       totalGuests: 0,
+    //       hoursInAdvance,
+    //       isWithinOperatingHours: true,
+    //     },
+    //   };
+    // }
 
     // 3. Check party size rules
     if (settings.largePartyNeedsApproval && partySize >= settings.largePartyMinSize) {
