@@ -116,7 +116,7 @@
   100% {
     opacity: 1;
     transform: translateY(0);
-    max-height: 500px;
+    max-height: 1200px;
   }
 }
 
@@ -135,7 +135,7 @@
 
 .section.visible {
   opacity: 1;
-  max-height: 500px;
+  max-height: 1200px;
   padding: 20px 0;
   pointer-events: auto;
   animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
