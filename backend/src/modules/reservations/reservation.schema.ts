@@ -30,11 +30,13 @@ export const updateReservationSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').optional(),
   time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/, 'Time must be in HH:mm or HH:mm:ss format').optional(),
   partySize: z.number().int().min(1).max(20).optional(),
-  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED']).optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'SEATED', 'NO_SHOW']).optional(),
   notes: z.string().optional(),
 });
 
 export const getReservationsQuerySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED']).optional(),
+  fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'SEATED', 'NO_SHOW']).optional(),
 });

@@ -48,16 +48,18 @@ export class ReservationController {
 
   /**
    * List Reservations - GET /api/reservations
-   * Get reservations with optional filters
+   * Get reservations with optional filters: date, fromDate, toDate, status
    */
   getReservations = async (req: Request, res: Response): Promise<void> => {
     try {
       const validatedQuery = getReservationsQuerySchema.parse(req.query);
 
-      const reservations = await this.reservationService.getReservations(
-        validatedQuery.date ? new Date(validatedQuery.date) : undefined,
-        validatedQuery.status as ReservationStatus | undefined
-      );
+      const reservations = await this.reservationService.getReservations({
+        date: validatedQuery.date ? new Date(validatedQuery.date) : undefined,
+        fromDate: validatedQuery.fromDate ? new Date(validatedQuery.fromDate) : undefined,
+        toDate: validatedQuery.toDate ? new Date(validatedQuery.toDate) : undefined,
+        status: validatedQuery.status as ReservationStatus | undefined,
+      });
 
       res.json({ reservations });
     } catch (error: any) {

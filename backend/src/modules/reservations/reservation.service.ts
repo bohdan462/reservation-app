@@ -108,7 +108,8 @@ export class ReservationService {
         input.guestName,
         input.date.toISOString().split('T')[0],
         input.time,
-        input.partySize
+        input.partySize,
+        reservation.cancelToken
       );
     }
 
@@ -215,14 +216,38 @@ export class ReservationService {
   }
 
   /**
-   * Get reservations by date and optional status
+   * Get reservations with flexible date filtering
    */
-  async getReservations(date?: Date, status?: ReservationStatus): Promise<Reservation[]> {
+  async getReservations(filters: {
+    date?: Date;
+    fromDate?: Date;
+    toDate?: Date;
+    status?: ReservationStatus;
+  }): Promise<Reservation[]> {
+    const where: any = {};
+
+    // Exact date match takes precedence
+    if (filters.date) {
+      where.date = filters.date;
+    } else {
+      // Date range filtering
+      if (filters.fromDate || filters.toDate) {
+        where.date = {};
+        if (filters.fromDate) {
+          where.date.gte = filters.fromDate;
+        }
+        if (filters.toDate) {
+          where.date.lte = filters.toDate;
+        }
+      }
+    }
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
     return prisma.reservation.findMany({
-      where: {
-        ...(date && { date }),
-        ...(status && { status }),
-      },
+      where,
       orderBy: [{ date: 'asc' }, { time: 'asc' }],
     });
   }
@@ -313,4 +338,49 @@ export class ReservationService {
 
     return this.cancelReservation(reservation.id);
   }
+
+  /**
+   * Get reservation by cancel token (for guest use)
+   */
+  async getByToken(cancelToken: string): Promise<Reservation | null> {
+    return prisma.reservation.findUnique({
+      where: { cancelToken },
+    });
+  }
+
+  /**
+   * Update reservation by cancel token (for guest use)
+   * @param setToPending - If true, sets status back to PENDING after guest edits
+   */
+  async updateByToken(
+    cancelToken: string,
+    updates: {
+      date?: Date;
+      time?: string;
+      partySize?: number;
+      notes?: string;
+    },
+    setToPending: boolean = true
+  ): Promise<Reservation> {
+    const reservation = await prisma.reservation.findUnique({
+      where: { cancelToken },
+    });
+
+    if (!reservation) {
+      throw new Error('Reservation not found');
+    }
+
+    const data: any = { ...updates };
+    
+    // If guest edits their reservation, set it back to PENDING for review
+    if (setToPending && Object.keys(updates).length > 0) {
+      data.status = ReservationStatus.PENDING;
+    }
+
+    return prisma.reservation.update({
+      where: { cancelToken },
+      data,
+    });
+  }
 }
+

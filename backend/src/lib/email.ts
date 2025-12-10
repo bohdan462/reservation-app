@@ -34,7 +34,7 @@ export async function sendReservationConfirmation(
   partySize: number,
   cancelToken: string
 ): Promise<void> {
-  const cancelUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cancel/${cancelToken}`;
+  const manageUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/manage/${cancelToken}`;
   
   return sendEmail({
     to: email,
@@ -48,7 +48,7 @@ Date: ${date}
 Time: ${time}
 Party Size: ${partySize}
 
-To cancel this reservation, please visit: ${cancelUrl}
+Manage your reservation (edit or cancel): ${manageUrl}
 
 Thank you for choosing our restaurant!
     `.trim(),
@@ -60,8 +60,11 @@ export async function sendReservationPending(
   guestName: string,
   date: string,
   time: string,
-  partySize: number
+  partySize: number,
+  cancelToken: string
 ): Promise<void> {
+  const manageUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/manage/${cancelToken}`;
+
   return sendEmail({
     to: email,
     subject: 'Reservation Request Received',
@@ -71,6 +74,8 @@ Dear ${guestName},
 We have received your reservation request for ${partySize} people on ${date} at ${time}.
 
 Our team will review your request and get back to you shortly.
+
+Manage your reservation: ${manageUrl}
 
 Thank you!
     `.trim(),
@@ -107,7 +112,7 @@ export async function sendWaitlistPromotion(
   partySize: number,
   cancelToken: string
 ): Promise<void> {
-  const cancelUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/cancel/${cancelToken}`;
+  const manageUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/manage/${cancelToken}`;
   
   return sendEmail({
     to: email,
@@ -121,9 +126,62 @@ Date: ${date}
 Time: ${time}
 Party Size: ${partySize}
 
-To cancel this reservation, please visit: ${cancelUrl}
+Manage your reservation: ${manageUrl}
 
 See you soon!
+    `.trim(),
+  });
+}
+
+export async function sendReservationUpdated(
+  email: string,
+  guestName: string,
+  date: string,
+  time: string,
+  partySize: number,
+  cancelToken: string
+): Promise<void> {
+  const manageUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/manage/${cancelToken}`;
+  
+  return sendEmail({
+    to: email,
+    subject: 'Reservation Updated',
+    text: `
+Dear ${guestName},
+
+Your reservation has been updated and is now pending review.
+
+Updated Details:
+Date: ${date}
+Time: ${time}
+Party Size: ${partySize}
+
+We will confirm the changes shortly.
+
+Manage your reservation: ${manageUrl}
+
+Thank you!
+    `.trim(),
+  });
+}
+
+export async function sendReservationCancelled(
+  email: string,
+  guestName: string,
+  date: string,
+  time: string
+): Promise<void> {
+  return sendEmail({
+    to: email,
+    subject: 'Reservation Cancelled',
+    text: `
+Dear ${guestName},
+
+Your reservation for ${date} at ${time} has been cancelled.
+
+We hope to see you again soon!
+
+Thank you!
     `.trim(),
   });
 }

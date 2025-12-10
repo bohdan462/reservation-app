@@ -2,6 +2,7 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import reservationRoutes, { cancelRouter } from './modules/reservations/reservation.routes';
 import waitlistRoutes from './modules/waitlist/waitlist.routes';
+import publicRoutes from './modules/public/public.routes';
 import swaggerUi from 'swagger-ui-express';
 import { openapiSpec } from './openapi';
 
@@ -21,8 +22,9 @@ export function createApp(): Application {
   // API routes
   app.use('/api/reservations', reservationRoutes);
   app.use('/api/waitlist', waitlistRoutes);
+  app.use('/api/public', publicRoutes);
 
-  // Public routes (no /api prefix)
+  // Public routes (no /api prefix) - legacy support
   app.use('/reservations', cancelRouter);
 
   // OpenAPI / Swagger docs
