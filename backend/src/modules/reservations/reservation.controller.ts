@@ -8,6 +8,15 @@ import {
 import { ReservationStatus } from '@prisma/client';
 import { getReservationHistory } from '../../lib/reservationHistory';
 
+/**
+ * Parse a YYYY-MM-DD string into a Date object without timezone issues
+ * Sets time to noon to avoid any edge-case shifts
+ */
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0);
+}
+
 export class ReservationController {
   private reservationService: ReservationService;
 
@@ -29,9 +38,13 @@ export class ReservationController {
       // Debug: log validated data
       console.log('[RESERVATION] Validated data:', validatedData);
 
+      // Parse date correctly to avoid timezone issues
+      // "2025-12-10" should be stored as Dec 10, not shifted to Dec 9
+      const dateObj = parseLocalDate(validatedData.date);
+
       const result = await this.reservationService.createReservation({
         ...validatedData,
-        date: new Date(validatedData.date),
+        date: dateObj,
       });
 
       res.status(201).json(result);
@@ -56,9 +69,9 @@ export class ReservationController {
       const validatedQuery = getReservationsQuerySchema.parse(req.query);
 
       const reservations = await this.reservationService.getReservations({
-        date: validatedQuery.date ? new Date(validatedQuery.date) : undefined,
-        fromDate: validatedQuery.fromDate ? new Date(validatedQuery.fromDate) : undefined,
-        toDate: validatedQuery.toDate ? new Date(validatedQuery.toDate) : undefined,
+        date: validatedQuery.date ? parseLocalDate(validatedQuery.date) : undefined,
+        fromDate: validatedQuery.fromDate ? parseLocalDate(validatedQuery.fromDate) : undefined,
+        toDate: validatedQuery.toDate ? parseLocalDate(validatedQuery.toDate) : undefined,
         status: validatedQuery.status as ReservationStatus | undefined,
       });
 
