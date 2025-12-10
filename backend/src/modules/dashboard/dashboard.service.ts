@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/db';
 import { ReservationStatus } from '@prisma/client';
 import { SettingsService } from '../settings/settings.service';
+import { formatDateLocal } from '../../lib/serialize';
 
 export interface DashboardStats {
   todayStats: {
@@ -45,7 +46,7 @@ export class DashboardService {
   async getStats(): Promise<DashboardStats> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString().split('T')[0];
+    const todayISO = formatDateLocal(today);
     const now = new Date();
 
     // Get settings

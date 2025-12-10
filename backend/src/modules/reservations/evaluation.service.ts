@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/db';
 import { SettingsService } from '../settings/settings.service';
 import { ReservationStatus } from '@prisma/client';
+import { parseDateUTC } from '../../lib/serialize';
 
 export type EvaluationDecision = 'AUTO_CONFIRM' | 'PENDING' | 'WAITLIST' | 'REJECT';
 
@@ -109,9 +110,9 @@ export class EvaluationService {
     // Check if past same-day cutoff
     if (hoursInAdvance < 24) {
       const requestDateTime = new Date(`${date}T${time}:00`);
-      const cutoffDateTime = new Date(date);
+      const cutoffDateTime = this.parseLocalDate(date);
       cutoffDateTime.setHours(settings.sameDayCutoffHour, 0, 0, 0);
-      
+
       if (new Date() > cutoffDateTime && requestDateTime.getDate() === cutoffDateTime.getDate()) {
         return {
           decision: 'REJECT',
@@ -197,11 +198,9 @@ export class EvaluationService {
         decision: 'WAITLIST',
         reason: `Capacity at ${Math.round(capacity.utilization * 100)}% - adding to waitlist`,
         metadata: {
-        const requestDateTime = this.parseLocalDate(date);
-        const [rh, rm] = time.split(':').map(Number);
-        requestDateTime.setHours(rh, rm, 0, 0);
-        const cutoffDateTime = this.parseLocalDate(date);
-        cutoffDateTime.setHours(settings.sameDayCutoffHour, 0, 0, 0);
+          currentCapacityPercent: capacity.utilization,
+          reservationsInSlot: capacity.reservationCount,
+          totalGuests: capacity.totalGuests,
           hoursInAdvance,
           isWithinOperatingHours: true,
         },
@@ -261,7 +260,7 @@ export class EvaluationService {
     // Get all CONFIRMED reservations for this date within turnover window
     const reservations = await prisma.reservation.findMany({
       where: {
-        date: new Date(date),
+        date: parseDateUTC(date),
         status: ReservationStatus.CONFIRMED,
       },
     });
@@ -299,8 +298,8 @@ export class EvaluationService {
     }
 
     // 2. Check regular operating hours
-    const dateObj = new Date(date);
-    const dayOfWeek = dateObj.getDay(); // 0-6 (Sunday-Saturday)
+    const dateObj = parseDateUTC(date);
+    const dayOfWeek = dateObj.getUTCDay(); // 0-6 (Sunday-Saturday)
     const hours = settings.operatingHours.find((h: any) => h.dayOfWeek === dayOfWeek);
 
     if (!hours || hours.isClosed) return false;
@@ -340,19 +339,11 @@ export class EvaluationService {
     // The server runs in UTC, but the client sends times in local restaurant timezone
     // Restaurant is in Central Time (UTC-6 in winter, UTC-5 in summer)
     // December is CST (UTC-6)
-    const RESTAURANT_UTC_OFFSET = -6; // CST
-    const serverUtcOffset = now.getTimezoneOffset() / -60; // Server's offset in hours
-    
-    // Adjust reservation time to match server's understanding
-    // If server is in UTC (offset 0) and restaurant is CST (offset -6):
-    // A 5:30 PM reservation in CST is 11:30 PM in UTC
-    // So we need to add (0 - (-6)) = 6 hours to get the UTC equivalent
-          date: this.parseLocalDate(date),
-    
-    // Create the reservation datetime adjusted to server time
-    const reservationInServerTime = new Date(reservationDate.getTime() + offsetDiffHours * 60 * 60 * 1000);
-    
-    const diffMs = reservationInServerTime.getTime() - now.getTime();
+    // Create the reservation datetime in restaurant-local context (use parseLocalDate to avoid UTC shift)
+    const requestDateTime = this.parseLocalDate(date);
+    requestDateTime.setHours(hours, minutes, 0, 0);
+
+    const diffMs = requestDateTime.getTime() - now.getTime();
     return diffMs / (1000 * 60 * 60); // Convert to hours
   }
 }

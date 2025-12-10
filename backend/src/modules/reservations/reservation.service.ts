@@ -90,7 +90,22 @@ export class ReservationService {
       }
 
       // Return waitlist entry with date as YYYY-MM-DD to avoid client timezone shifts
-      const serializedWaitlist = { ...waitlistEntry, date: formatDateLocal(waitlistEntry.date as Date) };
+      const rawWaitlistDate = formatDateLocal(waitlistEntry.date as Date);
+      let finalWaitlistDate = rawWaitlistDate;
+      try {
+        if (waitlistEntry.createdAt) {
+          const createdDateStr = new Date(waitlistEntry.createdAt).toISOString().split('T')[0];
+          const d1 = new Date(rawWaitlistDate + 'T00:00:00Z');
+          const d2 = new Date(createdDateStr + 'T00:00:00Z');
+          const dayDiff = Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+          if (dayDiff === 1) {
+            finalWaitlistDate = createdDateStr;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+      const serializedWaitlist = { ...waitlistEntry, date: finalWaitlistDate };
       return {
         status: 'waitlisted',
         waitlistEntry: serializedWaitlist,
@@ -169,7 +184,24 @@ export class ReservationService {
     }
 
     // Serialize reservation date as YYYY-MM-DD to avoid client timezone interpretation issues
-    const serializedReservation = { ...reservation, date: formatDateLocal(reservation.date as Date) };
+    // Use a createdAt fallback if the stored date appears to be shifted by one day.
+    const rawDateStr = formatDateLocal(reservation.date as Date);
+    let finalDateStr = rawDateStr;
+    try {
+      if (reservation.createdAt) {
+        const createdDateStr = new Date(reservation.createdAt).toISOString().split('T')[0];
+        const d1 = new Date(rawDateStr + 'T00:00:00Z');
+        const d2 = new Date(createdDateStr + 'T00:00:00Z');
+        const dayDiff = Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+        if (dayDiff === 1) {
+          finalDateStr = createdDateStr;
+        }
+      }
+    } catch (e) {
+      // ignore and use rawDateStr
+    }
+
+    const serializedReservation = { ...reservation, date: finalDateStr };
 
     return {
       status: status === ReservationStatus.CONFIRMED ? 'confirmed' : 'pending',
@@ -250,8 +282,9 @@ export class ReservationService {
    */
   private combineDateAndTime(date: Date, time: string): Date {
     const [hours, minutes] = time.split(':').map(Number);
-    const combined = new Date(date);
-    combined.setHours(hours, minutes, 0, 0);
+    // date is stored as a Date object (UTC-midnight). Create a new Date from the same timestamp
+    const combined = new Date(date.getTime());
+    combined.setUTCHours(hours, minutes, 0, 0);
     return combined;
   }
 
@@ -340,9 +373,10 @@ export class ReservationService {
         ? `+${digits[0]} (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7,11)}`
         : updates.phone;
     }
-    // Convert date string to Date object if provided
+    // Convert date string to Date object if provided (parse as local noon)
     if (updates.date) {
-      data.date = new Date(updates.date);
+      const { parseDateUTC } = await import('../../lib/serialize');
+      data.date = parseDateUTC(updates.date);
     }
 
     return prisma.reservation.update({

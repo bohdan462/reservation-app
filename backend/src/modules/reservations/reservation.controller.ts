@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { ReservationService } from './reservation.service';
+import { serializeReservation, serializeReservations, parseDateUTC } from '../../lib/serialize';
 import {
   createReservationSchema,
   updateReservationSchema,
@@ -8,14 +9,7 @@ import {
 import { ReservationStatus } from '@prisma/client';
 import { getReservationHistory } from '../../lib/reservationHistory';
 
-/**
- * Parse a YYYY-MM-DD string into a Date object without timezone issues
- * Sets time to noon to avoid any edge-case shifts
- */
-function parseLocalDate(dateStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day, 12, 0, 0);
-}
+// Use parseDateUTC from serialize to create a Date at UTC midnight for consistent DB writes/queries
 
 export class ReservationController {
   private reservationService: ReservationService;
@@ -40,7 +34,7 @@ export class ReservationController {
 
       // Parse date correctly to avoid timezone issues
       // "2025-12-10" should be stored as Dec 10, not shifted to Dec 9
-      const dateObj = parseLocalDate(validatedData.date);
+      const dateObj = parseDateUTC(validatedData.date);
 
       const result = await this.reservationService.createReservation({
         ...validatedData,
@@ -56,7 +50,12 @@ export class ReservationController {
         return;
       }
       console.error('Error creating reservation:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      // In development, include error details to aid debugging
+      if (process.env.NODE_ENV !== 'production') {
+        res.status(500).json({ error: 'Internal server error', message: error?.message, stack: error?.stack });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
     }
   };
 
@@ -69,13 +68,13 @@ export class ReservationController {
       const validatedQuery = getReservationsQuerySchema.parse(req.query);
 
       const reservations = await this.reservationService.getReservations({
-        date: validatedQuery.date ? parseLocalDate(validatedQuery.date) : undefined,
-        fromDate: validatedQuery.fromDate ? parseLocalDate(validatedQuery.fromDate) : undefined,
-        toDate: validatedQuery.toDate ? parseLocalDate(validatedQuery.toDate) : undefined,
+        date: validatedQuery.date ? parseDateUTC(validatedQuery.date) : undefined,
+        fromDate: validatedQuery.fromDate ? parseDateUTC(validatedQuery.fromDate) : undefined,
+        toDate: validatedQuery.toDate ? parseDateUTC(validatedQuery.toDate) : undefined,
         status: validatedQuery.status as ReservationStatus | undefined,
       });
 
-      res.json({ reservations });
+      res.json({ reservations: serializeReservations(reservations) });
     } catch (error: any) {
       if (error.name === 'ZodError') {
         res.status(400).json({ error: 'Validation error', details: error.errors });
@@ -100,7 +99,7 @@ export class ReservationController {
         return;
       }
 
-      res.json({ reservation });
+      res.json({ reservation: serializeReservation(reservation) });
     } catch (error) {
       console.error('Error fetching reservation:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -118,7 +117,7 @@ export class ReservationController {
 
       const reservation = await this.reservationService.updateReservation(id, validatedData);
 
-      res.json({ reservation });
+      res.json({ reservation: serializeReservation(reservation) });
     } catch (error: any) {
       if (error.name === 'ZodError') {
         res.status(400).json({ error: 'Validation error', details: error.errors });
@@ -138,7 +137,7 @@ export class ReservationController {
       const { id } = req.params;
       const reservation = await this.reservationService.cancelReservation(id);
 
-      res.json({ reservation, message: 'Reservation cancelled successfully' });
+      res.json({ reservation: serializeReservation(reservation), message: 'Reservation cancelled successfully' });
     } catch (error) {
       console.error('Error cancelling reservation:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -190,10 +189,7 @@ export class ReservationController {
       const { cancelToken } = req.params;
       const reservation = await this.reservationService.cancelByToken(cancelToken);
 
-      res.json({
-        reservation,
-        message: 'Your reservation has been cancelled successfully',
-      });
+      res.json({ reservation: serializeReservation(reservation), message: 'Your reservation has been cancelled successfully' });
     } catch (error: any) {
       if (error.message === 'Reservation not found') {
         res.status(404).json({ error: 'Reservation not found' });

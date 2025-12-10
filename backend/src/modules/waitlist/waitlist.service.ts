@@ -2,6 +2,7 @@ import { WaitlistEntry, WaitlistStatus, ReservationStatus } from '@prisma/client
 import { prisma } from '../../lib/db';
 import { config } from '../../config';
 import { sendWaitlistPromotion } from '../../lib/email';
+import { formatDateLocal } from '../../lib/serialize';
 
 export interface CreateWaitlistInput {
   guestName: string;
@@ -125,7 +126,7 @@ export class WaitlistService {
           await sendWaitlistPromotion(
             entry.email,
             entry.guestName,
-            date.toISOString().split('T')[0],
+            formatDateLocal(date),
             time,
             entry.partySize,
             reservation.cancelToken

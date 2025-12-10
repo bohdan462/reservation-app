@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { ReservationService } from '../reservations/reservation.service';
+import { serializeReservation, parseDateUTC } from '../../lib/serialize';
 import { sendReservationUpdated, sendReservationCancelled } from '../../lib/email';
 import { z } from 'zod';
 import { ReservationStatus } from '@prisma/client';
@@ -33,7 +34,7 @@ export class PublicController {
         return;
       }
 
-      res.json({ reservation });
+      res.json({ reservation: serializeReservation(reservation) });
     } catch (error) {
       console.error('Error fetching reservation by token:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -50,11 +51,10 @@ export class PublicController {
       const { token } = req.params;
       const validatedData = guestUpdateSchema.parse(req.body);
 
-      // Convert date string to Date if provided (use local parse to avoid UTC shift)
+      // Convert date string to Date if provided (use UTC-midnight parse to store canonical date)
       const updates: any = { ...validatedData };
       if (updates.date) {
-        const [y, m, d] = updates.date.split('-').map(Number);
-        updates.date = new Date(y, m - 1, d, 12, 0, 0);
+        updates.date = parseDateUTC(updates.date);
       }
 
       const reservation = await this.reservationService.updateByToken(
@@ -65,22 +65,18 @@ export class PublicController {
 
       // Send email notification
       if (reservation.email) {
-        const dateStr = reservation.date && typeof reservation.date === 'string'
-          ? reservation.date
-          : reservation.date && reservation.date.toISOString
-            ? reservation.date.toISOString().split('T')[0]
-            : '';
+        const serialized = serializeReservation(reservation);
         await sendReservationUpdated(
           reservation.email,
           reservation.guestName,
-          dateStr,
+          serialized.date || '',
           reservation.time,
           reservation.partySize,
           reservation.cancelToken
         );
       }
 
-      res.json({ reservation });
+      res.json({ reservation: serializeReservation(reservation) });
     } catch (error: any) {
       if (error.name === 'ZodError') {
         res.status(400).json({ error: 'Validation error', details: error.errors });
@@ -105,16 +101,17 @@ export class PublicController {
 
       // Send cancellation email
       if (reservation.email) {
+        const serialized = serializeReservation(reservation);
         await sendReservationCancelled(
           reservation.email,
           reservation.guestName,
-          reservation.date.toISOString().split('T')[0],
+          serialized.date || '',
           reservation.time
         );
       }
 
       res.json({
-        reservation,
+        reservation: serializeReservation(reservation),
         message: 'Your reservation has been cancelled successfully',
       });
     } catch (error: any) {
