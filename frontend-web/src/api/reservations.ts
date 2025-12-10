@@ -62,8 +62,18 @@ export async function createReservation(
     }),
   });
 
+  // Read raw text first to avoid JSON.parse errors
+  const rawText = await response.text();
+  let parsed: any = null;
+  try {
+    parsed = rawText ? JSON.parse(rawText) : null;
+  } catch (e) {
+    console.error('API parse error:', e);
+    console.error('Raw response text:', rawText);
+  }
+
   if (!response.ok) {
-    const error = await response.json();
+    const error = parsed || { error: 'HTTP error', status: response.status, body: rawText };
     console.error('API Error:', error);
     
     // Handle validation errors with details
@@ -72,10 +82,15 @@ export async function createReservation(
       throw new Error(messages || error.error || 'Validation failed');
     }
     
-    throw new Error(error.error || 'Failed to create reservation');
+    throw new Error(error.error || `Failed to create reservation (status ${response.status})`);
   }
 
-  return response.json();
+  if (!parsed) {
+    console.warn('API returned empty/invalid JSON, using fallback');
+    // Fallback: attempt to parse known success shape from text or throw
+    throw new Error('Unexpected API response format');
+  }
+  return parsed as CreateReservationResponse;
 }
 
 export async function cancelReservation(cancelToken: string): Promise<void> {
