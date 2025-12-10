@@ -29,6 +29,12 @@ export class EvaluationService {
   constructor() {
     this.settingsService = new SettingsService();
   }
+  
+  // Parse YYYY-MM-DD into local Date at noon to avoid UTC shifts
+  private parseLocalDate(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0);
+  }
 
   /**
    * Evaluate a reservation request and return decision
@@ -191,9 +197,11 @@ export class EvaluationService {
         decision: 'WAITLIST',
         reason: `Capacity at ${Math.round(capacity.utilization * 100)}% - adding to waitlist`,
         metadata: {
-          currentCapacityPercent: capacity.utilization,
-          reservationsInSlot: capacity.reservationCount,
-          totalGuests: capacity.totalGuests,
+        const requestDateTime = this.parseLocalDate(date);
+        const [rh, rm] = time.split(':').map(Number);
+        requestDateTime.setHours(rh, rm, 0, 0);
+        const cutoffDateTime = this.parseLocalDate(date);
+        cutoffDateTime.setHours(settings.sameDayCutoffHour, 0, 0, 0);
           hoursInAdvance,
           isWithinOperatingHours: true,
         },
@@ -339,7 +347,7 @@ export class EvaluationService {
     // If server is in UTC (offset 0) and restaurant is CST (offset -6):
     // A 5:30 PM reservation in CST is 11:30 PM in UTC
     // So we need to add (0 - (-6)) = 6 hours to get the UTC equivalent
-    const offsetDiffHours = serverUtcOffset - RESTAURANT_UTC_OFFSET;
+          date: this.parseLocalDate(date),
     
     // Create the reservation datetime adjusted to server time
     const reservationInServerTime = new Date(reservationDate.getTime() + offsetDiffHours * 60 * 60 * 1000);

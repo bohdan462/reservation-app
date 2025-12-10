@@ -50,10 +50,11 @@ export class PublicController {
       const { token } = req.params;
       const validatedData = guestUpdateSchema.parse(req.body);
 
-      // Convert date string to Date if provided
+      // Convert date string to Date if provided (use local parse to avoid UTC shift)
       const updates: any = { ...validatedData };
       if (updates.date) {
-        updates.date = new Date(updates.date);
+        const [y, m, d] = updates.date.split('-').map(Number);
+        updates.date = new Date(y, m - 1, d, 12, 0, 0);
       }
 
       const reservation = await this.reservationService.updateByToken(
@@ -64,10 +65,15 @@ export class PublicController {
 
       // Send email notification
       if (reservation.email) {
+        const dateStr = reservation.date && typeof reservation.date === 'string'
+          ? reservation.date
+          : reservation.date && reservation.date.toISOString
+            ? reservation.date.toISOString().split('T')[0]
+            : '';
         await sendReservationUpdated(
           reservation.email,
           reservation.guestName,
-          reservation.date.toISOString().split('T')[0],
+          dateStr,
           reservation.time,
           reservation.partySize,
           reservation.cancelToken

@@ -25,6 +25,12 @@ export class CapacityController {
     this.settingsService = new SettingsService();
   }
 
+  // Parse YYYY-MM-DD into a local Date at noon to avoid UTC shifts
+  private parseLocalDate(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0);
+  }
+
   /**
    * Evaluate a reservation request - POST /api/capacity/evaluate
    */
@@ -55,7 +61,7 @@ export class CapacityController {
       const settings = await this.settingsService.getSettings();
 
       // Get operating hours for this date
-      const dateObj = new Date(date);
+      const dateObj = this.parseLocalDate(date);
       const dayOfWeek = dateObj.getDay();
 
       // Check special dates first
@@ -117,7 +123,7 @@ export class CapacityController {
 
     const reservations = await prisma.reservation.findMany({
       where: {
-        date: new Date(date),
+        date: this.parseLocalDate(date),
         status: ReservationStatus.CONFIRMED,
       },
     });
