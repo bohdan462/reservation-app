@@ -1,4 +1,5 @@
 import { config } from '../config';
+import nodemailer from 'nodemailer';
 
 interface EmailOptions {
   to: string;
@@ -7,9 +8,27 @@ interface EmailOptions {
   html?: string;
 }
 
+// Create reusable transporter
+let transporter: nodemailer.Transporter | null = null;
+
+function getTransporter() {
+  if (!transporter && config.email.smtpHost && config.email.smtpUser && config.email.smtpPass) {
+    transporter = nodemailer.createTransport({
+      host: config.email.smtpHost,
+      port: config.email.smtpPort,
+      secure: config.email.smtpPort === 465, // true for 465, false for other ports
+      auth: {
+        user: config.email.smtpUser,
+        pass: config.email.smtpPass,
+      },
+    });
+  }
+  return transporter;
+}
+
 /**
- * Placeholder email sender
- * In production, integrate with a service like SendGrid, AWS SES, or Nodemailer
+ * Send email using nodemailer
+ * Falls back to console logging if SMTP is not configured
  */
 export async function sendEmail(options: EmailOptions): Promise<void> {
   console.log('[EMAIL] Sending email:', {
@@ -18,12 +37,27 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
     subject: options.subject,
   });
   
-  // In a real implementation, connect to SMTP server or email service API
-  // For now, just log it
-  console.log('[EMAIL] Body:', options.text);
+  const smtp = getTransporter();
   
-  // Simulate async operation
-  return Promise.resolve();
+  if (smtp) {
+    try {
+      await smtp.sendMail({
+        from: config.email.fromEmail,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+      });
+      console.log('[EMAIL] ✅ Email sent successfully to:', options.to);
+    } catch (error) {
+      console.error('[EMAIL] ❌ Failed to send email:', error);
+      console.log('[EMAIL] Body (for debugging):', options.text);
+    }
+  } else {
+    // Fallback: just log it (for development without SMTP configured)
+    console.log('[EMAIL] ⚠️  SMTP not configured, logging email body:');
+    console.log('[EMAIL] Body:', options.text);
+  }
 }
 
 export async function sendReservationConfirmation(

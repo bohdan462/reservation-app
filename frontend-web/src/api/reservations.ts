@@ -17,7 +17,7 @@ export interface Reservation {
   date: string;
   time: string;
   partySize: number;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'SEATED' | 'NO_SHOW';
   source: 'WEB' | 'IN_HOUSE' | 'PHONE';
   notes?: string;
   cancelToken: string;
@@ -108,6 +108,69 @@ export async function createReservation(
     throw new Error('Unexpected API response format');
   }
   return parsed as CreateReservationResponse;
+}
+
+export interface UpdateReservationByTokenRequest {
+  date?: string;
+  time?: string;
+  partySize?: number;
+  notes?: string;
+}
+
+// Public guest management endpoints
+export async function getReservationByToken(token: string): Promise<Reservation> {
+  const response = await fetch(`${API_BASE_URL}/api/public/reservations/${token}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to load reservation' }));
+    throw new Error(error.error || `Failed to load reservation (status ${response.status})`);
+  }
+
+  const data = await response.json();
+  return data.reservation;
+}
+
+export async function updateReservationByToken(
+  token: string,
+  updates: UpdateReservationByTokenRequest
+): Promise<Reservation> {
+  const response = await fetch(`${API_BASE_URL}/api/public/reservations/${token}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to update reservation' }));
+    throw new Error(error.error || `Failed to update reservation (status ${response.status})`);
+  }
+
+  const data = await response.json();
+  return data.reservation;
+}
+
+export async function cancelReservationByToken(token: string): Promise<Reservation> {
+  const response = await fetch(`${API_BASE_URL}/api/public/reservations/${token}/cancel`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to cancel reservation' }));
+    throw new Error(error.error || `Failed to cancel reservation (status ${response.status})`);
+  }
+
+  const data = await response.json();
+  return data.reservation;
 }
 
 export async function cancelReservation(cancelToken: string): Promise<void> {
