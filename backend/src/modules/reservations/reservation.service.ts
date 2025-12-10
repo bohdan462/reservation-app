@@ -8,6 +8,7 @@ import {
   sendWaitlistConfirmation,
 } from '../../lib/email';
 import { logReservationChange } from '../../lib/reservationHistory';
+import { EvaluationService } from './evaluation.service';
 
 export interface CreateReservationInput {
   guestName: string;
@@ -29,29 +30,42 @@ export interface ReservationResult {
 
 export class ReservationService {
   private waitlistService: WaitlistService;
+  private evaluationService: EvaluationService;
 
   constructor() {
     this.waitlistService = new WaitlistService();
+    this.evaluationService = new EvaluationService();
   }
 
   /**
-   * Create a new reservation with automatic confirmation logic
+   * Create a new reservation with automatic confirmation logic using smart evaluation
    */
   async createReservation(input: CreateReservationInput): Promise<ReservationResult> {
-    const now = new Date();
-      // Normalize phone: input.phone may be digits-only from Zod transform
-      const digits = input.phone.replace(/\D/g, '');
-      const formattedPhone = digits.length === 11
-        ? `+${digits[0]} (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7,11)}`
-        : input.phone;
-    const decision = await this.shouldAutoConfirm(input.date, input.time, input.partySize, now);
+    // Normalize phone: input.phone may be digits-only from Zod transform
+    const digits = input.phone.replace(/\D/g, '');
+    const formattedPhone = digits.length === 11
+      ? `+${digits[0]} (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7,11)}`
+      : input.phone;
 
-    if (decision.shouldWaitlist) {
-      // Create waitlist entry instead
+    // Use new evaluation service for smart decision-making
+    const evaluation = await this.evaluationService.evaluateReservation({
+      date: input.date.toISOString().split('T')[0],
+      time: input.time,
+      partySize: input.partySize,
+      source: input.source,
+    });
+
+    // Handle rejection
+    if (evaluation.decision === 'REJECT') {
+      throw new Error(evaluation.reason);
+    }
+
+    // Handle waitlist decision
+    if (evaluation.decision === 'WAITLIST') {
       const waitlistEntry = await this.waitlistService.createEntry({
         guestName: input.guestName,
         email: input.email,
-          phone: formattedPhone,
+        phone: formattedPhone,
         date: input.date,
         time: input.time,
         partySize: input.partySize,
@@ -71,11 +85,12 @@ export class ReservationService {
       return {
         status: 'waitlisted',
         waitlistEntry,
-        message: 'Capacity reached. You have been added to the waitlist.',
+        message: evaluation.reason,
       };
     }
 
-    const status = decision.shouldConfirm
+    // Determine status based on evaluation
+    const status = evaluation.decision === 'AUTO_CONFIRM'
       ? ReservationStatus.CONFIRMED
       : ReservationStatus.PENDING;
 
@@ -83,7 +98,7 @@ export class ReservationService {
       data: {
         guestName: input.guestName,
         email: input.email,
-          phone: formattedPhone,
+        phone: formattedPhone,
         date: input.date,
         time: input.time,
         partySize: input.partySize,
@@ -107,7 +122,8 @@ export class ReservationService {
         time: reservation.time,
         partySize: reservation.partySize,
         status: reservation.status,
-      }
+      },
+      evaluation.reason
     );
 
     // If auto-confirmed, log that too
@@ -118,7 +134,7 @@ export class ReservationService {
         'SYSTEM',
         undefined,
         undefined,
-        'Auto-confirmed based on party size and availability'
+        evaluation.reason
       );
     }
 
@@ -146,10 +162,7 @@ export class ReservationService {
     return {
       status: status === ReservationStatus.CONFIRMED ? 'confirmed' : 'pending',
       reservation,
-      message:
-        status === ReservationStatus.CONFIRMED
-          ? 'Reservation confirmed!'
-          : 'Reservation request received. We will review and get back to you.',
+      message: evaluation.reason,
     };
   }
 

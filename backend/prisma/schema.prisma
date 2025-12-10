@@ -108,3 +108,81 @@ model Table {
 
   @@index([isActive])
 }
+
+model RestaurantSettings {
+  id              String   @id @default(cuid())
+  restaurantId    String   @unique @default("default")
+  restaurantName  String   @default("My Restaurant")
+  
+  // Capacity settings
+  diningRoomSeats Int      @default(50)
+  barSeats        Int      @default(12)
+  outdoorSeats    Int      @default(20)
+  maxReservationsPerSlot Int @default(8)
+  turnoverMinutes Int      @default(90)
+  
+  // Business rules
+  autoAcceptMaxPartySize     Int     @default(6)
+  requireDepositMinPartySize Int     @default(8)
+  maxDaysInAdvance          Int     @default(60)
+  minHoursInAdvance         Int     @default(2)
+  autoWaitlistThreshold     Float   @default(0.95)
+  autoPendingThreshold      Float   @default(0.85)
+  largePartyNeedsApproval   Boolean @default(true)
+  largePartyMinSize         Int     @default(10)
+  allowSameDayBooking       Boolean @default(true)
+  sameDayCutoffHour         Int     @default(20)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  operatingHours  OperatingHours[]
+  specialDates    SpecialDate[]
+}
+
+model OperatingHours {
+  id              String   @id @default(cuid())
+  restaurantId    String
+  settings        RestaurantSettings @relation(fields: [restaurantId], references: [restaurantId], onDelete: Cascade)
+  dayOfWeek       Int      // 0-6 (Sunday-Saturday)
+  isClosed        Boolean  @default(false)
+  openTime        String   // "17:00"
+  closeTime       String   // "22:00"
+  
+  servicePeriods  ServicePeriod[]
+  
+  @@unique([restaurantId, dayOfWeek])
+  @@index([restaurantId])
+}
+
+model ServicePeriod {
+  id              String   @id @default(cuid())
+  operatingHoursId String
+  operatingHours  OperatingHours @relation(fields: [operatingHoursId], references: [id], onDelete: Cascade)
+  name            String   // "Lunch", "Dinner", "Brunch"
+  startTime       String
+  endTime         String
+  
+  @@index([operatingHoursId])
+}
+
+model SpecialDate {
+  id              String   @id @default(cuid())
+  restaurantId    String
+  settings        RestaurantSettings @relation(fields: [restaurantId], references: [restaurantId], onDelete: Cascade)
+  date            String   // ISO date "2025-12-25"
+  name            String   // "Christmas", "New Year's Eve"
+  isClosed        Boolean  @default(false)
+  customOpenTime  String?
+  customCloseTime String?
+  
+  // Optional overrides for this date
+  customAutoAcceptMax        Int?
+  customRequireDepositMin    Int?
+  customWaitlistThreshold    Float?
+  customPendingThreshold     Float?
+  
+  @@unique([restaurantId, date])
+  @@index([restaurantId])
+  @@index([date])
+}
