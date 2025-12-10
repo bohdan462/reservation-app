@@ -36,11 +36,37 @@ export default function ReservationForm() {
   const [result, setResult] = useState<CreateReservationResponse | null>(null);
   const [submitError, setSubmitError] = useState<string>('');
 
+  const formatPhoneNumber = (value: string): string => {
+    // Remove all non-numeric characters
+    const phoneNumber = value.replace(/\D/g, '');
+    
+    // Format as +1 (XXX) XXX-XXXX
+    if (phoneNumber.length === 0) {
+      return '';
+    } else if (phoneNumber.length <= 1) {
+      return `+${phoneNumber}`;
+    } else if (phoneNumber.length <= 4) {
+      return `+${phoneNumber.slice(0, 1)} (${phoneNumber.slice(1)}`;
+    } else if (phoneNumber.length <= 7) {
+      return `+${phoneNumber.slice(0, 1)} (${phoneNumber.slice(1, 4)}) ${phoneNumber.slice(4)}`;
+    } else {
+      return `+${phoneNumber.slice(0, 1)} (${phoneNumber.slice(1, 4)}) ${phoneNumber.slice(4, 7)}-${phoneNumber.slice(7, 11)}`;
+    }
+  };
+
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Auto-format phone number
+    if (name === 'phone') {
+      const formattedPhone = formatPhoneNumber(value);
+      setFormData((prev) => ({ ...prev, [name]: formattedPhone }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+    
     // Clear error for this field
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
@@ -62,6 +88,8 @@ export default function ReservationForm() {
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
+    } else if (!/^\+1 \(\d{3}\) \d{3}-\d{4}$/.test(formData.phone)) {
+      newErrors.phone = 'Phone must be in format: +1 (XXX) XXX-XXXX';
     }
 
     if (!formData.date) {
