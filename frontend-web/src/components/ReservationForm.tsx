@@ -153,12 +153,18 @@ export default function ReservationForm() {
   }, [formData.time]);
 
   const formatPhoneNumber = (value: string): string => {
-    const phoneNumber = value.replace(/\D/g, '');
+    let phoneNumber = value.replace(/\D/g, '');
+    
+    // Auto-prefix with 1 (US country code) if user starts typing without it
+    if (phoneNumber.length > 0 && phoneNumber[0] !== '1') {
+      phoneNumber = '1' + phoneNumber;
+    }
+    
     if (phoneNumber.length === 0) return '';
-    if (phoneNumber.length <= 1) return `+${phoneNumber}`;
-    if (phoneNumber.length <= 4) return `+${phoneNumber.slice(0, 1)} (${phoneNumber.slice(1)}`;
-    if (phoneNumber.length <= 7) return `+${phoneNumber.slice(0, 1)} (${phoneNumber.slice(1, 4)}) ${phoneNumber.slice(4)}`;
-    return `+${phoneNumber.slice(0, 1)} (${phoneNumber.slice(1, 4)}) ${phoneNumber.slice(4, 7)}-${phoneNumber.slice(7, 11)}`;
+    if (phoneNumber.length === 1) return '+1';
+    if (phoneNumber.length <= 4) return `+1 (${phoneNumber.slice(1)}`;
+    if (phoneNumber.length <= 7) return `+1 (${phoneNumber.slice(1, 4)}) ${phoneNumber.slice(4)}`;
+    return `+1 (${phoneNumber.slice(1, 4)}) ${phoneNumber.slice(4, 7)}-${phoneNumber.slice(7, 11)}`;
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
