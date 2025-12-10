@@ -309,11 +309,42 @@ export class EvaluationService {
 
   /**
    * Calculate hours in advance
+   * Note: The date and time are in the restaurant's local timezone (assumed to be sent by client)
+   * We need to compare against current time in that same timezone context
    */
   private calculateHoursInAdvance(date: string, time: string): number {
-    const reservationDateTime = new Date(`${date}T${time}:00`);
+    // Parse the reservation date and time
+    const [year, month, day] = date.split('-').map(Number);
+    const [hours, minutes] = time.split(':').map(Number);
+    
+    // Create reservation datetime in UTC (treating input as local restaurant time)
+    // For a restaurant in Central Time (UTC-6), 5:30 PM local = 11:30 PM UTC
+    // But since we're comparing relative time, we use a simpler approach:
+    // Calculate the difference assuming both times are in the same timezone context
+    
+    // Get current time
     const now = new Date();
-    const diffMs = reservationDateTime.getTime() - now.getTime();
+    
+    // Create reservation time for today to compare just the time portion for same-day bookings
+    const reservationDate = new Date(year, month - 1, day, hours, minutes, 0);
+    
+    // For the comparison, we need to account for timezone
+    // The server runs in UTC, but the client sends times in local restaurant timezone
+    // Restaurant is in Central Time (UTC-6 in winter, UTC-5 in summer)
+    // December is CST (UTC-6)
+    const RESTAURANT_UTC_OFFSET = -6; // CST
+    const serverUtcOffset = now.getTimezoneOffset() / -60; // Server's offset in hours
+    
+    // Adjust reservation time to match server's understanding
+    // If server is in UTC (offset 0) and restaurant is CST (offset -6):
+    // A 5:30 PM reservation in CST is 11:30 PM in UTC
+    // So we need to add (0 - (-6)) = 6 hours to get the UTC equivalent
+    const offsetDiffHours = serverUtcOffset - RESTAURANT_UTC_OFFSET;
+    
+    // Create the reservation datetime adjusted to server time
+    const reservationInServerTime = new Date(reservationDate.getTime() + offsetDiffHours * 60 * 60 * 1000);
+    
+    const diffMs = reservationInServerTime.getTime() - now.getTime();
     return diffMs / (1000 * 60 * 60); // Convert to hours
   }
 }
